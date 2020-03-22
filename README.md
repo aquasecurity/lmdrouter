@@ -6,8 +6,10 @@
 
 * [Overview](#overview)
     * [Features](#features)
+* [Status](#status)
 * [Installation](#installation)
 * [Usage](#usage)
+* [License](#license)
 
 ## Overview
 
@@ -29,6 +31,11 @@ and [chi](https://github.com/go-chi/chi).
   parameters.
 * Provides ability to automatically "marshal" response structs to an API Gateway
   response (only JSON responses are currently generated).
+
+## Status
+
+This is a very early, alpha release. Proper documentation has not yet been
+written, and API is subject to change.
 
 ## Installation
 
@@ -114,3 +121,7 @@ func loggerMiddleware(next lmdrouter.Handler) lmdrouter.Handler {
 	}
 }
 ```
+
+## License
+
+This library is distributed under the terms of the [Apache License 2.0](LICENSE).
