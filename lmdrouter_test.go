@@ -1,0 +1,324 @@
+package lmdrouter
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/jgroeneveld/trial/assert"
+)
+
+var log []string
+
+func TestRouter(t *testing.T) {
+	lmd := NewRouter("/api", logger)
+	lmd.Route("GET", "/", listSomethings)
+	lmd.Route("POST", "/", postSomething, auth)
+	lmd.Route("GET", "/:id", getSomething)
+	lmd.Route("GET", "/:id/stuff", listStuff)
+	lmd.Route("GET", "/:id/stuff/:fake", listStuff)
+
+	t.Run("Routes created correctly", func(t *testing.T) {
+		t.Run("/", func(t *testing.T) {
+			route, ok := lmd.routes["/"]
+			assert.True(t, ok, "Route must be created")
+			if ok {
+				assert.Equal(t, `^/api$`, route.re.String(), "Regex must be correct")
+				assert.NotEqual(t, nil, route.methods["GET"], "GET method must exist")
+				assert.NotEqual(t, nil, route.methods["POST"], "POST method must exist")
+			}
+		})
+
+		t.Run("/:id", func(t *testing.T) {
+			route, ok := lmd.routes["/:id"]
+			assert.True(t, ok, "Route must be created")
+			if ok {
+				assert.Equal(t, `^/api/([^/]+)$`, route.re.String(), "Regex must be correct")
+				assert.NotEqual(t, nil, route.methods["GET"], "GET method must exist")
+			}
+		})
+
+		t.Run("/:id/stuff/:fake", func(t *testing.T) {
+			route, ok := lmd.routes["/:id/stuff/:fake"]
+			assert.True(t, ok, "Route must be created")
+			if ok {
+				assert.Equal(t, `^/api/([^/]+)/stuff/([^/]+)$`, route.re.String(), "Regex must be correct")
+				assert.DeepEqual(t, []string{"id", "fake"}, route.paramNames, "Param names must be correct")
+			}
+		})
+	})
+
+	t.Run("Requests matched correctly", func(t *testing.T) {
+		t.Run("POST /api", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "POST",
+				Path:       "/api",
+			}
+			_, err := lmd.matchRequest(&req)
+			assert.Equal(t, nil, err, "Error must be nil")
+		})
+
+		t.Run("POST /api/", func(t *testing.T) {
+			// make sure trailing slashes are removed
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "POST",
+				Path:       "/api/",
+			}
+			_, err := lmd.matchRequest(&req)
+			assert.Equal(t, nil, err, "Error must be nil")
+		})
+
+		t.Run("DELETE /api", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "DELETE",
+				Path:       "/api",
+			}
+			_, err := lmd.matchRequest(&req)
+			assert.NotEqual(t, nil, err, "Error must not be nil")
+			var httpErr HTTPError
+			ok := errors.As(err, &httpErr)
+			assert.True(t, ok, "Error must be an HTTP error")
+			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Code, "Error code must be 405")
+		})
+
+		t.Run("GET /api/fake-id", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "GET",
+				Path:       "/api/fake-id",
+			}
+			_, err := lmd.matchRequest(&req)
+			assert.Equal(t, nil, err, "Error must be nil")
+			assert.Equal(t, "fake-id", req.PathParameters["id"], "ID must be correct")
+		})
+
+		t.Run("GET /api/fake-id/bla", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "GET",
+				Path:       "/api/fake-id/bla",
+			}
+			_, err := lmd.matchRequest(&req)
+			assert.NotEqual(t, nil, err, "Error must not be nil")
+			var httpErr HTTPError
+			ok := errors.As(err, &httpErr)
+			assert.True(t, ok, "Error must be an HTTP error")
+			assert.Equal(t, http.StatusNotFound, httpErr.Code, "Error code must be 404")
+		})
+
+		t.Run("GET /api/fake-id/stuff/fakey-fake", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "GET",
+				Path:       "/api/fake-id/stuff/fakey-fake",
+			}
+			_, err := lmd.matchRequest(&req)
+			assert.Equal(t, nil, err, "Error must be nil")
+			assert.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
+			assert.Equal(t, "fakey-fake", req.PathParameters["fake"], "'fake' must be correct")
+		})
+	})
+
+	t.Run("Requests execute correctly", func(t *testing.T) {
+		t.Run("POST /api without auth", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "POST",
+				Path:       "/api",
+			}
+			res, err := lmd.Handler(context.Background(), req)
+			assert.Equal(t, nil, err, "Error must not be nil")
+			assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
+			assert.True(t, len(log) > 0, "Log must have items")
+			assert.Equal(t, "[ERR] [POST /api] [401]", log[len(log)-1], "Last long line must be correct")
+		})
+
+		t.Run("POST /api with auth", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "POST",
+				Path:       "/api",
+				Headers: map[string]string{
+					"Authorization": "Bearer fake-token",
+				},
+			}
+			res, err := lmd.Handler(context.Background(), req)
+			assert.Equal(t, nil, err, "Error must not be nil")
+			assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
+		})
+
+		t.Run("GET /", func(t *testing.T) {
+			req := events.APIGatewayProxyRequest{
+				HTTPMethod: "GET",
+				Path:       "/api",
+			}
+			res, err := lmd.Handler(context.Background(), req)
+			assert.Equal(t, nil, err, "Error must not be nil")
+			assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
+			assert.True(t, len(log) > 0, "Log must have items")
+			assert.Equal(t, "[INF] [GET /api] [200]", log[len(log)-1], "Last long line must be correct")
+		})
+	})
+}
+
+func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
+	res events.APIGatewayProxyResponse,
+	err error,
+) {
+	// parse input
+	var input mockListRequest
+	err = UnmarshalRequest(
+		req.PathParameters,
+		req.QueryStringParameters,
+		&input,
+	)
+	if err != nil {
+		return HandleError(err)
+	}
+
+	now := time.Now()
+	then := now.Add(-time.Hour * 32)
+
+	output := []mockItem{
+		{ID: "one", Name: "First Item", Date: now},
+		{ID: "two", Name: "2nd Item", Date: then},
+		{ID: "three", Name: "Third Item", Date: then},
+	}
+
+	return MarshalResponse(http.StatusOK, nil, output)
+}
+
+func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
+	res events.APIGatewayProxyResponse,
+	err error,
+) {
+	var input mockPostRequest
+	if req.IsBase64Encoded {
+		body, err := base64.StdEncoding.DecodeString(req.Body)
+		if err != nil {
+			return HandleError(fmt.Errorf("failed decoding body: %w", err))
+		}
+
+		err = json.Unmarshal(body, &input)
+	} else {
+		err = json.Unmarshal([]byte(req.Body), &input)
+	}
+	if err != nil {
+		return HandleError(HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("invalid request body: %s", err),
+		})
+	}
+
+	output := map[string]string{
+		"id":  "bla",
+		"url": "https://service.com/api/bla",
+	}
+
+	return MarshalResponse(http.StatusAccepted, map[string]string{
+		"Location": output["url"],
+	}, output)
+}
+
+func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
+	res events.APIGatewayProxyResponse,
+	err error,
+) {
+	// parse input
+	var input mockGetRequest
+	err = UnmarshalRequest(
+		req.PathParameters,
+		req.QueryStringParameters,
+		&input,
+	)
+	if err != nil {
+		return HandleError(err)
+	}
+
+	output := mockItem{
+		ID:   input.ID,
+		Name: "Fake Name",
+		Date: time.Now(),
+	}
+
+	return MarshalResponse(http.StatusOK, nil, output)
+}
+
+func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
+	res events.APIGatewayProxyResponse,
+	err error,
+) {
+	// parse input
+	var input mockListRequest
+	err = UnmarshalRequest(
+		req.PathParameters,
+		req.QueryStringParameters,
+		&input,
+	)
+	if err != nil {
+		return HandleError(err)
+	}
+
+	output := []mockItem{}
+
+	return MarshalResponse(http.StatusOK, nil, output)
+}
+
+func logger(next Handler) Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		res events.APIGatewayProxyResponse,
+		err error,
+	) {
+		// [LEVEL] [METHOD PATH] [CODE] EXTRA
+		format := "[%s] [%s %s] [%d]%s"
+		level := "INF"
+		var code int
+		var extra string
+
+		res, err = next(ctx, req)
+		if err != nil {
+			level = "ERR"
+			code = http.StatusInternalServerError
+			extra = " " + err.Error()
+		} else {
+			code = res.StatusCode
+			if code >= 400 {
+				level = "ERR"
+			}
+		}
+
+		log = append(log, fmt.Sprintf(
+			format,
+			level,
+			req.HTTPMethod,
+			req.Path,
+			code,
+			extra,
+		))
+
+		return res, err
+	}
+}
+
+func auth(next Handler) Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		res events.APIGatewayProxyResponse,
+		err error,
+	) {
+		auth := req.Headers["Authorization"]
+		if auth != "" && strings.HasPrefix(auth, "Bearer ") {
+			token := strings.TrimPrefix(auth, "Bearer ")
+			if token == "fake-token" {
+				return next(ctx, req)
+			}
+		}
+
+		return MarshalResponse(
+			http.StatusUnauthorized,
+			map[string]string{"WWW-Authenticate": "Bearer"},
+			HTTPError{http.StatusUnauthorized, "Unauthorized"},
+		)
+	}
+}
