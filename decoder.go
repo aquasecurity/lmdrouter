@@ -2,6 +2,8 @@
 package lmdrouter
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,15 +11,41 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/aws/aws-lambda-go/events"
 )
 
 var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 
+// UnmarshalRequest "fills" out a target Go struct with data from the request.
+// If `body` is true, then the request body is assumed to be JSON and simply
+// unmarshaled into the target (taking into account that the request body may
+// be base-64 encoded). If `body` is false, the function will traverse the
+// exported fields of the target struct, and fill fields that include the
+// "lambda" struct tag from the request's query string parameters, or path
+// parameters, according to the tag definition.
+// Field types are currently limited to `string`, all `int` types, all `uint`
+// types, and `bool`.
+//
+// Example struct:
+//
+//     type ListPostsInput struct {
+//         ID          uint64 `lambda:"path.id"`
+//         Page        uint64 `lambda:"query.page"`
+//         PageSize    uint64 `lambda:"query.page_size"`
+//         Search      string `lambda:"query.search"`
+//         ShowDrafts  bool   `lambda:"query.show_hidden"`
+//     }
+//
 func UnmarshalRequest(
-	pathParams map[string]string,
-	queryParams map[string]string,
+	req events.APIGatewayProxyRequest,
+	body bool,
 	target interface{},
 ) error {
+	if body {
+		return unmarshalBody(req, target)
+	}
+
 	rv := reflect.ValueOf(target)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("invalid unmarshal target, must be pointer to struct")
@@ -41,12 +69,12 @@ func UnmarshalRequest(
 
 		switch components[0] {
 		case "query":
-			err := unmarshalField(typeField, valueField, queryParams, components[1])
+			err := unmarshalField(typeField, valueField, req.QueryStringParameters, components[1])
 			if err != nil {
 				return err
 			}
 		case "path":
-			err := unmarshalField(typeField, valueField, pathParams, components[1])
+			err := unmarshalField(typeField, valueField, req.PathParameters, components[1])
 			if err != nil {
 				return err
 			}
@@ -57,6 +85,31 @@ func UnmarshalRequest(
 			)
 		}
 	}
+	return nil
+}
+
+func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (
+	err error,
+) {
+	if req.IsBase64Encoded {
+		var body []byte
+		body, err = base64.StdEncoding.DecodeString(req.Body)
+		if err != nil {
+			return fmt.Errorf("failed decoding body: %w", err)
+		}
+
+		err = json.Unmarshal(body, target)
+	} else {
+		err = json.Unmarshal([]byte(req.Body), target)
+	}
+
+	if err != nil {
+		return HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("invalid request body: %s", err),
+		}
+	}
+
 	return nil
 }
 

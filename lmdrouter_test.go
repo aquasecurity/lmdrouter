@@ -2,8 +2,6 @@ package lmdrouter
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -169,11 +167,7 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 ) {
 	// parse input
 	var input mockListRequest
-	err = UnmarshalRequest(
-		req.PathParameters,
-		req.QueryStringParameters,
-		&input,
-	)
+	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
 		return HandleError(err)
 	}
@@ -195,21 +189,9 @@ func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	var input mockPostRequest
-	if req.IsBase64Encoded {
-		body, err := base64.StdEncoding.DecodeString(req.Body)
-		if err != nil {
-			return HandleError(fmt.Errorf("failed decoding body: %w", err))
-		}
-
-		err = json.Unmarshal(body, &input)
-	} else {
-		err = json.Unmarshal([]byte(req.Body), &input)
-	}
+	err = UnmarshalRequest(req, true, &input)
 	if err != nil {
-		return HandleError(HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("invalid request body: %s", err),
-		})
+		return HandleError(err)
 	}
 
 	output := map[string]string{
@@ -228,11 +210,7 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 ) {
 	// parse input
 	var input mockGetRequest
-	err = UnmarshalRequest(
-		req.PathParameters,
-		req.QueryStringParameters,
-		&input,
-	)
+	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
 		return HandleError(err)
 	}
@@ -252,11 +230,7 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 ) {
 	// parse input
 	var input mockListRequest
-	err = UnmarshalRequest(
-		req.PathParameters,
-		req.QueryStringParameters,
-		&input,
-	)
+	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
 		return HandleError(err)
 	}

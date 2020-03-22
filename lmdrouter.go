@@ -1,3 +1,28 @@
+// lmdrouter is a simple-to-use library for writing AWS Lambda functions in Go
+// that listen to events of type API Gateway Proxy Request (represented by the
+// `events.APIGatewayProxyRequest` type of the github.com/aws-lambda-go/events
+// package).
+//
+// The library allows creating functions that can match requests based on their
+// URI, just like an HTTP server that uses `net/http.Mux` (or any other
+// community-built routing library such as github.com/julienschmidt/httprouter
+// or github.com/go-chi/chi) would. The interface provided by the library is
+// very similar to these libraries and should be familiar to anyone who has
+// written HTTP applications in Go.
+//
+// The following features are currently provided:
+//
+// * Supports all HTTP methods
+// * Supports middleware functions at a global and per-resource level
+// * Provides ability to automatically "unmarshal" an API Gateway request to an
+//   arbitrary Go struct, with data coming either from path and query string
+//   parameters, or from the request body (only JSON requests are currently
+//   supported). See the documentation for the `UnmarshalRequest` function for
+//   more information.
+// * Provides the ability to automatically "marshal" responses of any type to an
+//   API Gateway response (only JSON responses are currently generated). See the
+//   `MarshalResponse` function for more information.
+//
 package lmdrouter
 
 import (
@@ -14,6 +39,9 @@ type hasMiddleware struct {
 	middleware []Middleware
 }
 
+// Router is the main type of the library. Lambda routes are registered to it,
+// and it's Handler method is used by the lambda to match requests and execute
+// the appropriate handler.
 type Router struct {
 	basePath string
 	routes   map[string]route
@@ -31,13 +59,77 @@ type resource struct {
 	hasMiddleware
 }
 
+// Middleware is a function that receives a handler function (the next function
+// in the chain, possibly another middleware or the actual handler matched for
+// a request), and returns a handler function. These functions are quite similar
+// to HTTP middlewares in other libraries.
+//
+// Example middleware that logs all requests:
+//
+//     func loggerMiddleware(next lmdrouter.Handler) lmdrouter.Handler {
+//         return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+//             res events.APIGatewayProxyResponse,
+//             err error,
+//         ) {
+//             format := "[%s] [%s %s] [%d]%s"
+//             level := "INF"
+//             var code int
+//             var extra string
+//
+//             res, err = next(ctx, req)
+//             if err != nil {
+//                 level = "ERR"
+//                 code = http.StatusInternalServerError
+//                 extra = " " + err.Error()
+//             } else {
+//                 code = res.StatusCode
+//                 if code >= 400 {
+//                     level = "ERR"
+//                 }
+//             }
+//
+//             log.Printf(format, level, req.HTTPMethod, req.Path, code, extra)
+//
+//             return res, err
+//         }
+//     }
+//
 type Middleware func(Handler) Handler
 
+// Handler is a request handler function. It receives a context, and the API
+// Gateway's proxy request object, and returns a proxy response object and an
+// error.
+//
+// Example:
+//
+//     func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
+//         res events.APIGatewayProxyResponse,
+//         err error,
+//     ) {
+//         // parse input
+//         var input listSomethingsInput
+//         err = lmdrouter.UnmarshalRequest(req, false, &input)
+//         if err != nil {
+//             return lmdrouter.HandleError(err)
+//         }
+//
+//         // call some business logic that generates an output struct
+//         // ...
+//
+//         return lmdrouter.MarshalResponse(http.StatusOK, nil, output)
+//     }
+//
 type Handler func(context.Context, events.APIGatewayProxyRequest) (
 	events.APIGatewayProxyResponse,
 	error,
 )
 
+// NewRouter creates a new Router object with a base path and a list of zero or
+// more global middleware functions. The base path is necessary if the lambda
+// function is not going to be mounted to a domain's root (for example, if the
+// function is mounted to "https://my.app/api", then the base path must be
+// "/api"). Use an empty string if the function is mounted to the root of the
+// domain.
 func NewRouter(basePath string, middleware ...Middleware) (l *Router) {
 	return &Router{
 		basePath: basePath,
@@ -48,6 +140,8 @@ func NewRouter(basePath string, middleware ...Middleware) (l *Router) {
 	}
 }
 
+// Route registers a new route, with the provided HTTP method name and path,
+// and zero or more local middleware functions.
 func (l *Router) Route(method, path string, handler Handler, middleware ...Middleware) {
 	// check if this route already exists
 	r, ok := l.routes[path]
@@ -90,6 +184,32 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	l.routes[path] = r
 }
 
+// Handler receives a context and an API Gateway Proxy request, and handles the
+// request, matching the appropriate handler and executing it. This is the
+// method that must be provided to the lambda's `main` function:
+//
+//     package main
+//
+//     import (
+//         "github.com/aws/aws-lambda-go/lambda"
+//         "github.com/aquasecurity/lmdrouter"
+//     )
+//
+//     var router *lmdrouter.Router
+//
+//     func init() {
+//         router = lmdrouter.NewRouter("/api", loggerMiddleware, authMiddleware)
+//         router.Route("GET", "/", listSomethings)
+// 	       router.Route("POST", "/", postSomething, someOtherMiddleware)
+//         router.Route("GET", "/:id", getSomething)
+//         router.Route("PUT", "/:id", updateSomething)
+//         router.Route("DELETE", "/:id", deleteSomething)
+//     }
+//
+//     func main() {
+//         lambda.Start(router.Handler)
+//     }
+//
 func (l *Router) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,

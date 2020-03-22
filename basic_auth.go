@@ -7,6 +7,9 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
+// BasicAuth attempts to parse a username and password from the request's
+// "Authorization" header. If the Authorization header is missing, or does not
+// contain valid Basic HTTP Authentication date, empty values will be returned.
 func BasicAuth(req events.APIGatewayProxyRequest) (user, pass string) {
 	auth := req.Headers["Authorization"]
 	if auth == "" {

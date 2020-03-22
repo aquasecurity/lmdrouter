@@ -14,8 +14,8 @@ type mockGetRequest struct {
 }
 
 type mockPostRequest struct {
-	Name string
-	Date time.Time
+	Name string    `json:"name"`
+	Date time.Time `json:"date"`
 }
 
 type mockItem struct {
