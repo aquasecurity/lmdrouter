@@ -36,8 +36,8 @@ func MarshalResponse(status int, headers map[string]string, data interface{}) (
 	}, nil
 }
 
-// HandleError generates an events.APIGatewayProxyResponse from an `error` value.
-// If the error is an `HTTPError`, the response's status code will be taken from
+// HandleError generates an events.APIGatewayProxyResponse from an error value.
+// If the error is an HTTPError, the response's status code will be taken from
 // the error. Otherwise, the error is assumed to be 500 Internal Server Error.
 // Regardless, all errors will generate a JSON response in the format
 // `{ "code": 500, "error": "something failed" }`

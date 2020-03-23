@@ -1,5 +1,6 @@
-// nolint: unused
 package lmdrouter
+
+// nolint: unused
 
 import (
 	"encoding/base64"
@@ -18,14 +19,14 @@ import (
 var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 
 // UnmarshalRequest "fills" out a target Go struct with data from the request.
-// If `body` is true, then the request body is assumed to be JSON and simply
+// If body is true, then the request body is assumed to be JSON and simply
 // unmarshaled into the target (taking into account that the request body may
-// be base-64 encoded). If `body` is false, the function will traverse the
+// be base-64 encoded). If body is false, the function will traverse the
 // exported fields of the target struct, and fill fields that include the
 // "lambda" struct tag from the request's query string parameters, or path
 // parameters, according to the tag definition.
-// Field types are currently limited to `string`, all `int` types, all `uint`
-// types, and `bool`.
+// Field types are currently limited to string, all int types, all uint
+// types, and bool.
 //
 // Example struct:
 //

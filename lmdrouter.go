@@ -4,24 +4,28 @@
 // package).
 //
 // The library allows creating functions that can match requests based on their
-// URI, just like an HTTP server that uses `net/http.Mux` (or any other
-// community-built routing library such as github.com/julienschmidt/httprouter
-// or github.com/go-chi/chi) would. The interface provided by the library is
-// very similar to these libraries and should be familiar to anyone who has
+// URI, just like an HTTP server that uses the standard
+// https://golang.org/pkg/net/http/#ServeMux (or any other community-built routing
+// library such as https://github.com/julienschmidt/httprouter or
+// https://github.com/go-chi/chi) would. The interface provided by the library
+// is very similar to these libraries and should be familiar to anyone who has
 // written HTTP applications in Go.
 //
 // The following features are currently provided:
 //
-// * Supports all HTTP methods
-// * Supports middleware functions at a global and per-resource level
+// * Supports all HTTP methods.
+//
+// * Supports middleware functions at a global and per-resource level.
+//
 // * Provides ability to automatically "unmarshal" an API Gateway request to an
-//   arbitrary Go struct, with data coming either from path and query string
-//   parameters, or from the request body (only JSON requests are currently
-//   supported). See the documentation for the `UnmarshalRequest` function for
-//   more information.
+// arbitrary Go struct, with data coming either from path and query string
+// parameters, or from the request body (only JSON requests are currently
+// supported). See the documentation for the `UnmarshalRequest` function for
+// more information.
+//
 // * Provides the ability to automatically "marshal" responses of any type to an
-//   API Gateway response (only JSON responses are currently generated). See the
-//   `MarshalResponse` function for more information.
+// API Gateway response (only JSON responses are currently generated). See the
+// MarshalResponse function for more information.
 //
 package lmdrouter
 
@@ -200,7 +204,7 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 //     func init() {
 //         router = lmdrouter.NewRouter("/api", loggerMiddleware, authMiddleware)
 //         router.Route("GET", "/", listSomethings)
-// 	       router.Route("POST", "/", postSomething, someOtherMiddleware)
+//         router.Route("POST", "/", postSomething, someOtherMiddleware)
 //         router.Route("GET", "/:id", getSomething)
 //         router.Route("PUT", "/:id", updateSomething)
 //         router.Route("DELETE", "/:id", deleteSomething)
