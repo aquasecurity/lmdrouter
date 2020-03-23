@@ -22,6 +22,9 @@ func Test_UnmarshalRequest(t *testing.T) {
 					"page":      "2",
 					"page_size": "30",
 				},
+				Headers: map[string]string{
+					"Accept-Language": "en-us",
+				},
 			},
 			false,
 			&input,
@@ -30,6 +33,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 		assert.Equal(t, "fake-scan-id", input.ID, "ID must be parsed from path")
 		assert.Equal(t, int64(2), input.Page, "Page must be parsed from query")
 		assert.Equal(t, int64(30), input.PageSize, "PageSize must be parsed from query")
+		assert.Equal(t, "en-us", input.Language, "Language must be parsed from headers")
 	})
 
 	t.Run("invalid path&query input", func(t *testing.T) {

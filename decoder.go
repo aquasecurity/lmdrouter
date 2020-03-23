@@ -22,11 +22,11 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 // If body is true, then the request body is assumed to be JSON and simply
 // unmarshaled into the target (taking into account that the request body may
 // be base-64 encoded). If body is false, the function will traverse the
-// exported fields of the target struct, and fill fields that include the
-// "lambda" struct tag from the request's query string parameters, or path
-// parameters, according to the tag definition.
+// exported fields of the target struct, and fill those that include the
+// "lambda" struct tag with values taken from the request's query string
+// parameters, path parameters or headers, according to the tag definition.
 // Field types are currently limited to string, all int types, all uint
-// types, and bool.
+// types, and bool (that also means nested structs are not currently supported).
 //
 // Example struct:
 //
@@ -36,6 +36,7 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 //         PageSize    uint64 `lambda:"query.page_size"`
 //         Search      string `lambda:"query.search"`
 //         ShowDrafts  bool   `lambda:"query.show_hidden"`
+//         Language    string `lambda:"header.Accept-Language"`
 //     }
 //
 func UnmarshalRequest(
@@ -68,22 +69,25 @@ func UnmarshalRequest(
 			return fmt.Errorf("invalid lambda tag for field %s", typeField.Name)
 		}
 
+		var sourceMap map[string]string
+
 		switch components[0] {
 		case "query":
-			err := unmarshalField(typeField, valueField, req.QueryStringParameters, components[1])
-			if err != nil {
-				return err
-			}
+			sourceMap = req.QueryStringParameters
 		case "path":
-			err := unmarshalField(typeField, valueField, req.PathParameters, components[1])
-			if err != nil {
-				return err
-			}
+			sourceMap = req.PathParameters
+		case "header":
+			sourceMap = req.Headers
 		default:
 			return fmt.Errorf(
-				"invalid param location %s for field %s",
+				"invalid param location %q for field %s",
 				components[0], typeField.Name,
 			)
+		}
+
+		err := unmarshalField(typeField, valueField, sourceMap, components[1])
+		if err != nil {
+			return err
 		}
 	}
 	return nil
