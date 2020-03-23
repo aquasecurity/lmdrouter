@@ -11,11 +11,38 @@
 // is very similar to these libraries and should be familiar to anyone who has
 // written HTTP applications in Go.
 //
-// The following features are currently provided:
+//
+//
+// Use Case
+//
+//
+//
+// When building large cloud-native applications, there's a certain balance to
+// strike when it comes to deployment of APIs. On one side of the scale, each API
+// endpoint has its own lambda function. This provides the greatest flexibility,
+// but is extremely difficult to maintain. On the other side of the scale, there
+// can be one lambda function for the entire API. This provides the least flexibility,
+// but is the easiest to maintain. Both are probably not a good idea.
+//
+// With `lmdrouter`, one can create small lambda functions for different aspects of
+// the API. For example, if your application model contains multiple domains (e.g.
+// articles, authors, topics, etc...), you can create one lambda function for each
+// domain, and deploy these independently (e.g. everything below "/api/articles" is
+// one lambda function, everything below "/api/authors" is another function). This
+// is also useful for applications where different teams are in charge of different
+// parts of the API.
+//
+//
+//
+// Features
+//
+//
 //
 // * Supports all HTTP methods.
 //
 // * Supports middleware functions at a global and per-resource level.
+//
+// * Supports path parameters with a simple ":<name>" format (e.g. "/posts/:id").
 //
 // * Provides ability to automatically "unmarshal" an API Gateway request to an
 // arbitrary Go struct, with data coming either from path and query string
