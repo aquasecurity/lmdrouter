@@ -36,24 +36,31 @@ func MarshalResponse(status int, headers map[string]string, data interface{}) (
 	}, nil
 }
 
+// ExposeServerErrors is a boolean indicating whether the HandleError function
+// should expose errors of status code 500 or above to clients. If false, the
+// name of the status code is used as the error message instead.
+var ExposeServerErrors = true
+
 // HandleError generates an events.APIGatewayProxyResponse from an error value.
 // If the error is an HTTPError, the response's status code will be taken from
 // the error. Otherwise, the error is assumed to be 500 Internal Server Error.
 // Regardless, all errors will generate a JSON response in the format
 // `{ "code": 500, "error": "something failed" }`
-// This format cannot currently be changed.
+// This format cannot currently be changed. If you do not wish to expose server
+// errors (i.e. errors whose status code is 500 or above), set the
+// ExposeServerErrors global variable to false.
 func HandleError(err error) (events.APIGatewayProxyResponse, error) {
 	var httpErr HTTPError
-	if errors.As(err, &httpErr) {
-		return MarshalResponse(httpErr.Code, nil, httpErr)
-	}
-
-	return MarshalResponse(
-		http.StatusInternalServerError,
-		nil,
-		HTTPError{
+	if !errors.As(err, &httpErr) {
+		httpErr = HTTPError{
 			Code:    http.StatusInternalServerError,
 			Message: err.Error(),
-		},
-	)
+		}
+	}
+
+	if httpErr.Code >= 500 && !ExposeServerErrors {
+		httpErr.Message = http.StatusText(httpErr.Code)
+	}
+
+	return MarshalResponse(httpErr.Code, nil, httpErr)
 }
