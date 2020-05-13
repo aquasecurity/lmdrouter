@@ -21,9 +21,17 @@ func Test_UnmarshalRequest(t *testing.T) {
 				QueryStringParameters: map[string]string{
 					"page":      "2",
 					"page_size": "30",
+					"const":     "two",
+				},
+				MultiValueQueryStringParameters: map[string][]string{
+					"terms":   []string{"one", "two"},
+					"numbers": []string{"1.2", "3.5", "666.666"},
 				},
 				Headers: map[string]string{
 					"Accept-Language": "en-us",
+				},
+				MultiValueHeaders: map[string][]string{
+					"Accept-Encoding": []string{"gzip", "deflate"},
 				},
 			},
 			false,
@@ -34,6 +42,10 @@ func Test_UnmarshalRequest(t *testing.T) {
 		assert.Equal(t, int64(2), input.Page, "Page must be parsed from query")
 		assert.Equal(t, int64(30), input.PageSize, "PageSize must be parsed from query")
 		assert.Equal(t, "en-us", input.Language, "Language must be parsed from headers")
+		assert.Equal(t, mockConstTwo, input.Const, "Const must be parsed from query")
+		assert.DeepEqual(t, []string{"one", "two"}, input.Terms, "Terms must be parsed from multiple query params")
+		assert.DeepEqual(t, []float64{1.2, 3.5, 666.666}, input.Numbers, "Numbers must be parsed from multiple query params")
+		assert.DeepEqual(t, []string{"gzip", "deflate"}, input.Encoding, "Encoding must be parsed from multiple header params")
 	})
 
 	t.Run("invalid path&query input", func(t *testing.T) {

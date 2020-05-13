@@ -25,18 +25,24 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 // exported fields of the target struct, and fill those that include the
 // "lambda" struct tag with values taken from the request's query string
 // parameters, path parameters or headers, according to the tag definition.
+//
 // Field types are currently limited to string, all int types, all uint
-// types, and bool (that also means nested structs are not currently supported).
+// types, all float types, bool and slices of the aforementioned types.
+//
+// Note that custom types that alias any of the aforementioned types are also
+// accepted and the appropriate constant values will be generated. Boolean
+// fields accept (in a case-insensitive way) the values "1", "true", "on" and
+// "enabled". Any other value is considered false.
 //
 // Example struct:
 //
 //     type ListPostsInput struct {
-//         ID          uint64 `lambda:"path.id"`
-//         Page        uint64 `lambda:"query.page"`
-//         PageSize    uint64 `lambda:"query.page_size"`
-//         Search      string `lambda:"query.search"`
-//         ShowDrafts  bool   `lambda:"query.show_hidden"`
-//         Language    string `lambda:"header.Accept-Language"`
+//         ID          uint64   `lambda:"path.id"`
+//         Page        uint64   `lambda:"query.page"`
+//         PageSize    uint64   `lambda:"query.page_size"`
+//         Search      string   `lambda:"query.search"`
+//         ShowDrafts  bool     `lambda:"query.show_hidden"`
+//         Languages   []string `lambda:"header.Accept-Language"`
 //     }
 //
 func UnmarshalRequest(
@@ -70,14 +76,17 @@ func UnmarshalRequest(
 		}
 
 		var sourceMap map[string]string
+		var multiMap map[string][]string
 
 		switch components[0] {
 		case "query":
 			sourceMap = req.QueryStringParameters
+			multiMap = req.MultiValueQueryStringParameters
 		case "path":
 			sourceMap = req.PathParameters
 		case "header":
 			sourceMap = req.Headers
+			multiMap = req.MultiValueHeaders
 		default:
 			return fmt.Errorf(
 				"invalid param location %q for field %s",
@@ -85,7 +94,13 @@ func UnmarshalRequest(
 			)
 		}
 
-		err := unmarshalField(typeField, valueField, sourceMap, components[1])
+		err := unmarshalField(
+			typeField.Type,
+			valueField,
+			sourceMap,
+			multiMap,
+			components[1],
+		)
 		if err != nil {
 			return err
 		}
@@ -119,38 +134,66 @@ func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (
 }
 
 func unmarshalField(
-	typeField reflect.StructField,
+	typeField reflect.Type,
 	valueField reflect.Value,
 	params map[string]string,
+	multiParam map[string][]string,
 	param string,
 ) error {
-	switch typeField.Type.Kind() {
+	switch typeField.Kind() {
 	case reflect.String:
 		valueField.SetString(params[param])
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		value, err := parseInt64Param(params, param)
+		str, ok := params[param]
+		value, err := parseInt64Param(param, str, ok)
 		if err != nil {
 			return err
 		}
 		valueField.SetInt(value)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		value, err := parseUint64Param(params, param)
+		str, ok := params[param]
+		value, err := parseUint64Param(param, str, ok)
 		if err != nil {
 			return err
 		}
 		valueField.SetUint(value)
+	case reflect.Float32, reflect.Float64:
+		str, ok := params[param]
+		value, err := parseFloat64Param(param, str, ok)
+		if err != nil {
+			return err
+		}
+		valueField.SetFloat(value)
 	case reflect.Bool:
-		valueField.SetBool(boolRegex.MatchString(params[param]))
+		valueField.SetBool(boolRegex.MatchString(strings.ToLower(params[param])))
+	case reflect.Slice:
+		// we'll be extracting values from multiParam, generating a slice and
+		// putting it in valueField
+		strs, ok := multiParam[param]
+		if ok {
+			slice := reflect.MakeSlice(typeField, len(strs), len(strs))
+
+			for i, str := range strs {
+				err := unmarshalField(
+					typeField.Elem(),
+					slice.Index(i),
+					map[string]string{"param": str},
+					nil,
+					"param",
+				)
+				if err != nil {
+					return err
+				}
+			}
+
+			valueField.Set(slice)
+		}
 	}
 
 	return nil
 }
 
-func parseInt64Param(params map[string]string, param string) (
-	value int64,
-	err error,
-) {
-	str, ok := params[param]
+func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 	if !ok {
 		return value, nil
 	}
@@ -166,11 +209,7 @@ func parseInt64Param(params map[string]string, param string) (
 	return value, nil
 }
 
-func parseUint64Param(params map[string]string, param string) (
-	value uint64,
-	err error,
-) {
-	str, ok := params[param]
+func parseUint64Param(param, str string, ok bool) (value uint64, err error) {
 	if !ok {
 		return value, nil
 	}
@@ -180,6 +219,22 @@ func parseUint64Param(params map[string]string, param string) (
 		return value, HTTPError{
 			Code:    http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid, positive integer", param),
+		}
+	}
+
+	return value, nil
+}
+
+func parseFloat64Param(param, str string, ok bool) (value float64, err error) {
+	if !ok {
+		return value, nil
+	}
+
+	value, err = strconv.ParseFloat(str, 64)
+	if err != nil {
+		return value, HTTPError{
+			Code:    http.StatusBadRequest,
+			Message: fmt.Sprintf("%s must be a valid floating point number", param),
 		}
 	}
 

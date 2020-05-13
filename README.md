@@ -95,8 +95,9 @@ func main() {
 // separate package inside your project
 
 type listSomethingsInput struct {
-    ID            string  `lambda:"path.id"`              // a path parameter declared as :id
-    ShowSomething bool    `lambda:"query.show_something"` // a query parameter named "show_something"
+    ID                string   `lambda:"path.id"`                // a path parameter declared as :id
+    ShowSomething     bool     `lambda:"query.show_something"`   // a query parameter named "show_something"
+    AcceptedLanguages []string `lambda:"header.Accept-Language"` // a multi-value header parameter
 }
 
 type postSomethingInput struct {
