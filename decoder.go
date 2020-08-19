@@ -21,10 +21,11 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 // UnmarshalRequest "fills" out a target Go struct with data from the request.
 // If body is true, then the request body is assumed to be JSON and simply
 // unmarshaled into the target (taking into account that the request body may
-// be base-64 encoded). If body is false, the function will traverse the
-// exported fields of the target struct, and fill those that include the
-// "lambda" struct tag with values taken from the request's query string
-// parameters, path parameters or headers, according to the tag definition.
+// be base-64 encoded). After than, or if body is false, the function will
+// traverse the exported fields of the target struct, and fill those that
+// include the "lambda" struct tag with values taken from the request's query
+// string parameters, path parameters or headers, according to the tag
+// definition.
 //
 // Field types are currently limited to string, all int types, all uint
 // types, all float types, bool and slices of the aforementioned types.
@@ -51,9 +52,16 @@ func UnmarshalRequest(
 	target interface{},
 ) error {
 	if body {
-		return unmarshalBody(req, target)
+		err := unmarshalBody(req, target)
+		if err != nil {
+			return err
+		}
 	}
 
+	return unmarshalEvent(req, target)
+}
+
+func unmarshalEvent(req events.APIGatewayProxyRequest, target interface{}) error {
 	rv := reflect.ValueOf(target)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("invalid unmarshal target, must be pointer to struct")

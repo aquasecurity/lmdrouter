@@ -26,6 +26,7 @@ type mockGetRequest struct {
 }
 
 type mockPostRequest struct {
+	ID   string    `lambda:"path.id"`
 	Name string    `json:"name"`
 	Date time.Time `json:"date"`
 }

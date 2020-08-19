@@ -76,13 +76,17 @@ func Test_UnmarshalRequest(t *testing.T) {
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: false,
-				Body:            `{"name":"Fake Post","date":"2020-03-23T11:33:00Z"}`,
+				PathParameters: map[string]string{
+					"id": "bla",
+				},
+				Body: `{"name":"Fake Post","date":"2020-03-23T11:33:00Z"}`,
 			},
 			true,
 			&input,
 		)
 
 		assert.Equal(t, nil, err, "Error must be nil")
+		assert.Equal(t, "bla", input.ID, "ID must be parsed from path parameters")
 		assert.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
 		assert.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
 	})
