@@ -16,6 +16,9 @@ type mockListRequest struct {
 	Terms    []string  `lambda:"query.terms"`
 	Numbers  []float64 `lambda:"query.numbers"`
 	Const    mockConst `lambda:"query.const"`
+	Bool     bool      `lambda:"query.bool"`
+	PBoolOne *bool     `lambda:"query.pbool1"`
+	PBoolTwo *bool     `lambda:"query.pbool2"`
 	Language string    `lambda:"header.Accept-Language"`
 	Encoding []string  `lambda:"header.Accept-Encoding"`
 }

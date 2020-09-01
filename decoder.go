@@ -174,6 +174,13 @@ func unmarshalField(
 		valueField.SetFloat(value)
 	case reflect.Bool:
 		valueField.SetBool(boolRegex.MatchString(strings.ToLower(params[param])))
+	case reflect.Ptr:
+		if typeField.Elem().Kind() == reflect.Bool {
+			if val, ok := params[param]; ok {
+				b := boolRegex.MatchString(strings.ToLower(val))
+				valueField.Set(reflect.ValueOf(&b))
+			}
+		}
 	case reflect.Slice:
 		// we'll be extracting values from multiParam, generating a slice and
 		// putting it in valueField

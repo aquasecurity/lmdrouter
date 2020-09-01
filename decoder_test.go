@@ -22,6 +22,8 @@ func Test_UnmarshalRequest(t *testing.T) {
 					"page":      "2",
 					"page_size": "30",
 					"const":     "two",
+					"bool":      "true",
+					"pbool1":    "0",
 				},
 				MultiValueQueryStringParameters: map[string][]string{
 					"terms":   []string{"one", "two"},
@@ -43,6 +45,10 @@ func Test_UnmarshalRequest(t *testing.T) {
 		assert.Equal(t, int64(30), input.PageSize, "PageSize must be parsed from query")
 		assert.Equal(t, "en-us", input.Language, "Language must be parsed from headers")
 		assert.Equal(t, mockConstTwo, input.Const, "Const must be parsed from query")
+		assert.True(t, input.Bool, "Bool must be true")
+		assert.NotNil(t, input.PBoolOne, "PBoolOne must not be nil")
+		assert.False(t, *input.PBoolOne, "PBoolOne must be *false")
+		assert.Equal(t, (*bool)(nil), input.PBoolTwo, "PBoolTwo must be nil")
 		assert.DeepEqual(t, []string{"one", "two"}, input.Terms, "Terms must be parsed from multiple query params")
 		assert.DeepEqual(t, []float64{1.2, 3.5, 666.666}, input.Numbers, "Numbers must be parsed from multiple query params")
 		assert.DeepEqual(t, []string{"gzip", "deflate"}, input.Encoding, "Encoding must be parsed from multiple header params")
