@@ -159,6 +159,41 @@ func TestRouter(t *testing.T) {
 			assert.Equal(t, "[INF] [GET /api] [200]", log[len(log)-1], "Last long line must be correct")
 		})
 	})
+
+	t.Run("Overlapping routes", func(t *testing.T) {
+		router := NewRouter("")
+		router.Route("GET", "/foo/:id", func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
+			res.Body = "/foo/:id"
+			return res, nil
+		})
+		router.Route("POST", "/foo/bar", func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
+			res.Body = "/foo/bar"
+			return res, nil
+		})
+
+		// call POST /foo/bar in a loop. We do this because the router iterates
+		// over a map to match routes, which is non-deterministic, meaning
+		// sometimes we may match the route and sometimes not
+		for i := 1; i <= 10; i++ {
+			res, _ := router.Handler(context.Background(), events.APIGatewayProxyRequest{
+				HTTPMethod: "POST",
+				Path:       "/foo/bar",
+			})
+			assert.Equal(t, "/foo/bar", res.Body, "request must match /foo/bar route")
+		}
+
+		res, _ := router.Handler(context.Background(), events.APIGatewayProxyRequest{
+			HTTPMethod: "DELETE",
+			Path:       "/foo/bar",
+		})
+		assert.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, "Status code must be 405")
+
+		res, _ = router.Handler(context.Background(), events.APIGatewayProxyRequest{
+			HTTPMethod: "GET",
+			Path:       "/foo/bar2",
+		})
+		assert.Equal(t, "/foo/:id", res.Body, "Body must match")
+	})
 }
 
 func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
