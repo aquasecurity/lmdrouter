@@ -269,6 +269,11 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 	// remove trailing slash from request path
 	req.Path = strings.TrimSuffix(req.Path, "/")
 
+	negErr := HTTPError{
+		Code:    http.StatusNotFound,
+		Message: "No such resource",
+	}
+
 	// find a route that matches the request
 	for _, r := range l.routes {
 		// does the path match?
@@ -281,10 +286,13 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 		var ok bool
 		rsrc, ok = r.methods[req.HTTPMethod]
 		if !ok {
-			return rsrc, HTTPError{
+			// we matched a route, but it didn't support this method. Mark negErr
+			// with a 405 error, but continue, we might match another route
+			negErr = HTTPError{
 				Code:    http.StatusMethodNotAllowed,
 				Message: fmt.Sprintf("%s requests not supported by this resource", req.HTTPMethod),
 			}
+			continue
 		}
 
 		// process path parameters
@@ -306,8 +314,5 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 		return rsrc, nil
 	}
 
-	return rsrc, HTTPError{
-		Code:    http.StatusNotFound,
-		Message: "No such resource",
-	}
+	return rsrc, negErr
 }
