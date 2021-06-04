@@ -179,8 +179,8 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	r, ok := l.routes[path]
 	if !ok {
 		r = route{
-			methods: make(map[string]resource),
-			routeType: "static", // assume static until we encounter regex
+			methods:   make(map[string]resource),
+			routeType: "static", // assume static until we encounter a parameter
 		}
 
 		// create a regular expression from the path
