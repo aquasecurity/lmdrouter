@@ -10,17 +10,18 @@ const (
 )
 
 type mockListRequest struct {
-	ID       string    `lambda:"path.id"`
-	Page     int64     `lambda:"query.page"`
-	PageSize int64     `lambda:"query.page_size"`
-	Terms    []string  `lambda:"query.terms"`
-	Numbers  []float64 `lambda:"query.numbers"`
-	Const    mockConst `lambda:"query.const"`
-	Bool     bool      `lambda:"query.bool"`
-	PBoolOne *bool     `lambda:"query.pbool1"`
-	PBoolTwo *bool     `lambda:"query.pbool2"`
-	Language string    `lambda:"header.Accept-Language"`
-	Encoding []string  `lambda:"header.Accept-Encoding"`
+	ID       string     `lambda:"path.id"`
+	Page     int64      `lambda:"query.page"`
+	PageSize int64      `lambda:"query.page_size"`
+	Terms    []string   `lambda:"query.terms"`
+	Numbers  []float64  `lambda:"query.numbers"`
+	Const    mockConst  `lambda:"query.const"`
+	Bool     bool       `lambda:"query.bool"`
+	PBoolOne *bool      `lambda:"query.pbool1"`
+	PBoolTwo *bool      `lambda:"query.pbool2"`
+	Time     *time.Time `lambda:"query.time"`
+	Language string     `lambda:"header.Accept-Language"`
+	Encoding []string   `lambda:"header.Accept-Encoding"`
 }
 
 type mockGetRequest struct {
