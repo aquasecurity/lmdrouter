@@ -24,6 +24,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 					"const":     "two",
 					"bool":      "true",
 					"pbool1":    "0",
+					"time":      "2021-11-01T11:11:11.000Z",
 				},
 				MultiValueQueryStringParameters: map[string][]string{
 					"terms":   []string{"one", "two"},
@@ -48,6 +49,8 @@ func Test_UnmarshalRequest(t *testing.T) {
 		assert.True(t, input.Bool, "Bool must be true")
 		assert.NotNil(t, input.PBoolOne, "PBoolOne must not be nil")
 		assert.False(t, *input.PBoolOne, "PBoolOne must be *false")
+		assert.NotNil(t, *input.Time, "Time must not be nil")
+		assert.Equal(t, input.Time.Format(time.RFC3339), "2021-11-01T11:11:11Z")
 		assert.Equal(t, (*bool)(nil), input.PBoolTwo, "PBoolTwo must be nil")
 		assert.DeepEqual(t, []string{"one", "two"}, input.Terms, "Terms must be parsed from multiple query params")
 		assert.DeepEqual(t, []float64{1.2, 3.5, 666.666}, input.Numbers, "Numbers must be parsed from multiple query params")

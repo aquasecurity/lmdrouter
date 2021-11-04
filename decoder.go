@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -175,7 +176,18 @@ func unmarshalField(
 	case reflect.Bool:
 		valueField.SetBool(boolRegex.MatchString(strings.ToLower(params[param])))
 	case reflect.Ptr:
-		if typeField.Elem().Kind() == reflect.Bool {
+		switch typeField.Elem().Kind() {
+		case reflect.Struct:
+			if val, ok := params[param]; ok {
+				if typeField.Elem() == reflect.TypeOf(time.Now()) {
+					parsedTime, err := time.Parse(time.RFC3339, val)
+					if err != nil {
+						return err
+					}
+					valueField.Set(reflect.ValueOf(&parsedTime))
+				}
+			}
+		case reflect.Bool:
 			if val, ok := params[param]; ok {
 				b := boolRegex.MatchString(strings.ToLower(val))
 				valueField.Set(reflect.ValueOf(&b))
