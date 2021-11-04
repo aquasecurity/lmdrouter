@@ -10,6 +10,10 @@ import (
 	"github.com/jgroeneveld/trial/assert"
 )
 
+type stringAliasExample string
+
+const aliasExample stringAliasExample = "world"
+
 func Test_UnmarshalRequest(t *testing.T) {
 	t.Run("valid path&query input", func(t *testing.T) {
 		var input mockListRequest
@@ -25,6 +29,8 @@ func Test_UnmarshalRequest(t *testing.T) {
 					"bool":      "true",
 					"pbool1":    "0",
 					"time":      "2021-11-01T11:11:11.000Z",
+					"alias":     "hello",
+					"alias_ptr": "world",
 				},
 				MultiValueQueryStringParameters: map[string][]string{
 					"terms":   []string{"one", "two"},
@@ -49,8 +55,11 @@ func Test_UnmarshalRequest(t *testing.T) {
 		assert.True(t, input.Bool, "Bool must be true")
 		assert.NotNil(t, input.PBoolOne, "PBoolOne must not be nil")
 		assert.False(t, *input.PBoolOne, "PBoolOne must be *false")
-		assert.NotNil(t, *input.Time, "Time must not be nil")
+		assert.NotNil(t, input.Time, "Time must not be nil")
 		assert.Equal(t, input.Time.Format(time.RFC3339), "2021-11-01T11:11:11Z")
+		assert.Equal(t, input.Alias, stringAliasExample("hello"))
+		assert.NotNil(t, input.AliasPtr)
+		assert.Equal(t, *input.AliasPtr, aliasExample)
 		assert.Equal(t, (*bool)(nil), input.PBoolTwo, "PBoolTwo must be nil")
 		assert.DeepEqual(t, []string{"one", "two"}, input.Terms, "Terms must be parsed from multiple query params")
 		assert.DeepEqual(t, []float64{1.2, 3.5, 666.666}, input.Numbers, "Numbers must be parsed from multiple query params")
