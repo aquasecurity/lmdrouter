@@ -176,9 +176,11 @@ func unmarshalField(
 	case reflect.Bool:
 		valueField.SetBool(boolRegex.MatchString(strings.ToLower(params[param])))
 	case reflect.Ptr:
-		switch typeField.Elem().Kind() {
-		case reflect.Struct:
-			if val, ok := params[param]; ok {
+		if val, ok := params[param]; ok {
+			switch typeField.Elem().Kind() {
+			case reflect.Int, reflect.Int32, reflect.Int64, reflect.String, reflect.Float32, reflect.Float64:
+				valueField.Set(reflect.ValueOf(&val).Convert(typeField))
+			case reflect.Struct:
 				if typeField.Elem() == reflect.TypeOf(time.Now()) {
 					parsedTime, err := time.Parse(time.RFC3339, val)
 					if err != nil {
@@ -186,9 +188,7 @@ func unmarshalField(
 					}
 					valueField.Set(reflect.ValueOf(&parsedTime))
 				}
-			}
-		case reflect.Bool:
-			if val, ok := params[param]; ok {
+			case reflect.Bool:
 				b := boolRegex.MatchString(strings.ToLower(val))
 				valueField.Set(reflect.ValueOf(&b))
 			}
