@@ -23,14 +23,15 @@ func Test_UnmarshalRequest(t *testing.T) {
 					"id": "fake-scan-id",
 				},
 				QueryStringParameters: map[string]string{
-					"page":      "2",
-					"page_size": "30",
-					"const":     "two",
-					"bool":      "true",
-					"pbool1":    "0",
-					"time":      "2021-11-01T11:11:11.000Z",
-					"alias":     "hello",
-					"alias_ptr": "world",
+					"page":       "2",
+					"page_size":  "30",
+					"const":      "two",
+					"bool":       "true",
+					"pbool1":     "0",
+					"time":       "2021-11-01T11:11:11.000Z",
+					"alias":      "hello",
+					"alias_ptr":  "world",
+					"commaSplit": "one,two,three",
 				},
 				MultiValueQueryStringParameters: map[string][]string{
 					"terms":   []string{"one", "two"},
@@ -60,6 +61,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 		assert.Equal(t, input.Alias, stringAliasExample("hello"))
 		assert.NotNil(t, input.AliasPtr)
 		assert.Equal(t, *input.AliasPtr, aliasExample)
+		assert.DeepEqual(t, []Number{numberOne, numberTwo, numberThree}, input.CommaSplit, "CommaSplit must have 2 items")
 		assert.Equal(t, (*bool)(nil), input.PBoolTwo, "PBoolTwo must be nil")
 		assert.DeepEqual(t, []string{"one", "two"}, input.Terms, "Terms must be parsed from multiple query params")
 		assert.DeepEqual(t, []float64{1.2, 3.5, 666.666}, input.Numbers, "Numbers must be parsed from multiple query params")
