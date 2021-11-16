@@ -214,6 +214,20 @@ func unmarshalField(
 			}
 
 			valueField.Set(slice)
+		} else {
+			str, ok := params[param]
+			if ok {
+				stringParts := strings.Split(str, ",")
+				slice := reflect.MakeSlice(typeField, len(stringParts), len(stringParts))
+
+				for i, p := range stringParts {
+					inVal := reflect.ValueOf(p)
+					asVal := inVal.Convert(typeField.Elem())
+					slice.Index(i).Set(asVal)
+				}
+
+				valueField.Set(slice)
+			}
 		}
 	}
 
