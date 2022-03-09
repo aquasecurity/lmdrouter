@@ -60,6 +60,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -308,7 +309,7 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 				req.PathParameters = make(map[string]string)
 			}
 
-			req.PathParameters[param] = matches[i+1]
+			req.PathParameters[param], _ = url.QueryUnescape(matches[i+1])
 		}
 
 		return rsrc, nil
