@@ -54,6 +54,9 @@
 // API Gateway response (only JSON responses are currently generated). See the
 // MarshalResponse function for more information.
 //
+// * Implements net/http.Handler for local development and general usage outside
+// of an AWS Lambda environment.
+//
 package lmdrouter
 
 import (

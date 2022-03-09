@@ -47,8 +47,18 @@ func TestRouter(t *testing.T) {
 			route, ok := lmd.routes["/:id/stuff/:fake"]
 			assert.True(t, ok, "Route must be created")
 			if ok {
-				assert.Equal(t, `^/api/([^/]+)/stuff/([^/]+)$`, route.re.String(), "Regex must be correct")
-				assert.DeepEqual(t, []string{"id", "fake"}, route.paramNames, "Param names must be correct")
+				assert.Equal(
+					t,
+					`^/api/([^/]+)/stuff/([^/]+)$`,
+					route.re.String(),
+					"Regex must be correct",
+				)
+				assert.DeepEqual(
+					t,
+					[]string{"id", "fake"},
+					route.paramNames,
+					"Param names must be correct",
+				)
 			}
 		})
 	})
@@ -131,7 +141,12 @@ func TestRouter(t *testing.T) {
 			assert.Equal(t, nil, err, "Error must not be nil")
 			assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
 			assert.True(t, len(log) > 0, "Log must have items")
-			assert.Equal(t, "[ERR] [POST /api] [401]", log[len(log)-1], "Last long line must be correct")
+			assert.Equal(
+				t,
+				"[ERR] [POST /api] [401]",
+				log[len(log)-1],
+				"Last long line must be correct",
+			)
 		})
 
 		t.Run("POST /api with auth", func(t *testing.T) {
@@ -147,7 +162,7 @@ func TestRouter(t *testing.T) {
 			assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
 		})
 
-		t.Run("GET /", func(t *testing.T) {
+		t.Run("GET /api", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
 				HTTPMethod: "GET",
 				Path:       "/api",
@@ -156,20 +171,33 @@ func TestRouter(t *testing.T) {
 			assert.Equal(t, nil, err, "Error must not be nil")
 			assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
 			assert.True(t, len(log) > 0, "Log must have items")
-			assert.Equal(t, "[INF] [GET /api] [200]", log[len(log)-1], "Last long line must be correct")
+			assert.Equal(
+				t,
+				"[INF] [GET /api] [200]",
+				log[len(log)-1],
+				"Last long line must be correct",
+			)
 		})
 	})
 
 	t.Run("Overlapping routes", func(t *testing.T) {
 		router := NewRouter("")
-		router.Route("GET", "/foo/:id", func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
-			res.Body = "/foo/:id"
-			return res, nil
-		})
-		router.Route("POST", "/foo/bar", func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
-			res.Body = "/foo/bar"
-			return res, nil
-		})
+		router.Route(
+			"GET",
+			"/foo/:id",
+			func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
+				res.Body = "/foo/:id"
+				return res, nil
+			},
+		)
+		router.Route(
+			"POST",
+			"/foo/bar",
+			func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
+				res.Body = "/foo/bar"
+				return res, nil
+			},
+		)
 
 		// call POST /foo/bar in a loop. We do this because the router iterates
 		// over a map to match routes, which is non-deterministic, meaning
@@ -270,7 +298,13 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 		return HandleError(err)
 	}
 
-	output := []mockItem{}
+	output := make([]mockItem, len(input.Terms))
+	for i, term := range input.Terms {
+		output[i] = mockItem{
+			ID:   input.ID,
+			Name: fmt.Sprintf("%s in %s", term, input.Language),
+		}
+	}
 
 	return MarshalResponse(http.StatusOK, nil, output)
 }

@@ -169,6 +169,17 @@ func loggerMiddleware(next lmdrouter.Handler) lmdrouter.Handler {
 }
 ```
 
+## Static Compilation for AWS Lambda
+
+To ensure Lambda applications using lmdrouter (or any Lambda applications
+written in Go, for that matter) will properly work in AWS's Go runtime, make
+sure to compile your applications statically. You can either disable CGO
+completely using `CGO_ENABLED=0`, or use the following build flags:
+
+```sh
+go build -tags netgo -ldflags "-s -w"
+```
+
 ## License
 
 This library is distributed under the terms of the [Apache License 2.0](LICENSE).
