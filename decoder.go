@@ -22,21 +22,23 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 // UnmarshalRequest "fills" out a target Go struct with data from the request.
 // If body is true, then the request body is assumed to be JSON and simply
 // unmarshaled into the target (taking into account that the request body may
-// be base-64 encoded). After than, or if body is false, the function will
+// be base-64 encoded). After that, or if body is false, the function will
 // traverse the exported fields of the target struct, and fill those that
 // include the "lambda" struct tag with values taken from the request's query
-// string parameters, path parameters or headers, according to the tag
-// definition.
+// string parameters, path parameters and headers, according to the field's
+// struct tag definition. This means a struct value can be filled with data from
+// the body, the path, the query string and the headers at the same time.
 //
-// Field types are currently limited to string, all int types, all uint
-// types, all float types, bool and slices of the aforementioned types.
+// Field types are currently limited to string, all integer types, all unsigned
+// integer types, all float types, booleans, slices of the aforementioned types
+// and pointers of these types.
 //
 // Note that custom types that alias any of the aforementioned types are also
 // accepted and the appropriate constant values will be generated. Boolean
 // fields accept (in a case-insensitive way) the values "1", "true", "on" and
 // "enabled". Any other value is considered false.
 //
-// Example struct:
+// Example struct (no body):
 //
 //     type ListPostsInput struct {
 //         ID          uint64   `lambda:"path.id"`
@@ -45,6 +47,15 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 //         Search      string   `lambda:"query.search"`
 //         ShowDrafts  bool     `lambda:"query.show_hidden"`
 //         Languages   []string `lambda:"header.Accept-Language"`
+//     }
+//
+// Example struct (JSON body):
+//
+//     type UpdatePostInput struct {
+//         ID          uint64   `lambda:"path.id"`
+//         Author      string   `lambda:"header.Author"`
+//         Title       string   `json:"title"`
+//         Content     string   `json:"content"`
 //     }
 //
 func UnmarshalRequest(

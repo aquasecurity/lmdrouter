@@ -6,13 +6,17 @@
 
 ## Table of Contents
 
-* [Overview](#overview)
-    * [Use Case](#use-case)
-    * [Features](#features)
-* [Status](#status)
-* [Installation](#installation)
-* [Usage](#usage)
-* [License](#license)
+<!-- vim-markdown-toc GFM -->
+
+- [Overview](#overview)
+  - [Use Case](#use-case)
+  - [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Static Compilation for AWS Lambda](#static-compilation-for-aws-lambda)
+- [License](#license)
+
+<!-- vim-markdown-toc -->
 
 ## Overview
 
@@ -36,7 +40,7 @@ but is the easiest to maintain. Both are probably not a good idea.
 
 With `lmdrouter`, one can create small lambda functions for different aspects of
 the API. For example, if your application model contains multiple domains (e.g.
-articles, authors, topics, etc...), you can create one lambda function for each
+articles, authors, topics, etc…), you can create one lambda function for each
 domain, and deploy these independently (e.g. everything below "/api/articles" is
 one lambda function, everything below "/api/authors" is another function). This
 is also useful for applications where different teams are in charge of different
@@ -44,19 +48,15 @@ parts of the API.
 
 ### Features
 
-* Supports all HTTP methods.
-* Supports middleware at a global and per-resource level.
-* Supports path parameters with a simple ":<name>" format (e.g. "/posts/:id").
-* Provides ability to automatically "unmarshal" an API Gateway request to an
-  arbitrary Go struct, with data coming either from path and query string
-  parameters, or from the request body (only JSON requests are currently
-  supported).
-* Provides ability to automatically "marshal" responses of any type to an API
+- Supports all HTTP methods.
+- Supports middleware at a global and per-resource level.
+- Supports path parameters with a simple ":<name>" format (e.g. "/posts/:id").
+- Provides ability to automatically "unmarshal" an API Gateway request to an
+  arbitrary Go struct, with data coming from the request path, the query string,
+  the headers and the request body (only JSON requests are currently supported).
+- Provides ability to automatically "marshal" responses of any type to an API
   Gateway response (only JSON responses are currently generated).
-
-## Status
-
-This is a very early, alpha release. API is subject to change.
+- Implements [net/http.Handler](https://pkg.go.dev/net/http#Handler) for running locally or as a simple HTTP server.
 
 ## Installation
 
@@ -168,6 +168,12 @@ func loggerMiddleware(next lmdrouter.Handler) lmdrouter.Handler {
     }
 }
 ```
+
+Note that for requests with a body (e.g. POST, PUT, PATCH), the struct types of
+your inputs can contain parameters from all sources: path parameters, query
+string parameters, request headers _and_ the JSON body. Anything that doesn't
+have a `lambda` struct tag is taken from the body. Regular `json` tags can be
+used for that.
 
 ## Static Compilation for AWS Lambda
 
