@@ -1,6 +1,7 @@
 package lmdrouter
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -49,6 +50,21 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var resBody []byte
+	if res.IsBase64Encoded {
+		resBody, err = base64.StdEncoding.DecodeString(res.Body)
+		if err != nil {
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(500)
+			json.NewEncoder(w).Encode(map[string]interface{}{
+				"error": fmt.Sprintf("Handler returned invalid base64 data: %s", err),
+			}) // nolint: errcheck
+			return
+		}
+	} else {
+		resBody = []byte(res.Body)
+	}
+
 	for header, values := range res.MultiValueHeaders {
 		for i, value := range values {
 			if i == 0 {
@@ -66,7 +82,7 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(res.StatusCode)
-	w.Write([]byte(res.Body)) // nolint: errcheck
+	w.Write(resBody) // nolint: errcheck
 }
 
 func convertMap(in map[string][]string) map[string]string {
