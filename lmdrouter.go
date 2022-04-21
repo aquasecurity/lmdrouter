@@ -87,6 +87,7 @@ type route struct {
 	re         *regexp.Regexp
 	paramNames []string
 	methods    map[string]resource
+	routeType  string
 }
 
 type resource struct {
@@ -182,7 +183,8 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	r, ok := l.routes[path]
 	if !ok {
 		r = route{
-			methods: make(map[string]resource),
+			methods:   make(map[string]resource),
+			routeType: "static", // assume static until we encounter a parameter
 		}
 
 		// create a regular expression from the path
@@ -197,6 +199,7 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 			if strings.HasPrefix(part, ":") {
 				r.paramNames = append(r.paramNames, strings.TrimPrefix(part, ":"))
 				re = fmt.Sprintf("%s/([^/]+)", re)
+				r.routeType = "dynamic"
 			} else {
 				re = fmt.Sprintf("%s/%s", re, part)
 			}
@@ -249,9 +252,14 @@ func (l *Router) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
-	rsrc, err := l.matchRequest(&req)
+	// match static routes first
+	rsrc, err := l.matchRequest(&req, "static")
 	if err != nil {
-		return HandleError(err)
+		// match dynamic routes if no resource
+		rsrc, err = l.matchRequest(&req, "dynamic")
+		if err != nil {
+			return HandleError(err)
+		}
 	}
 
 	handler := rsrc.handler
@@ -266,7 +274,7 @@ func (l *Router) Handler(
 	return handler(ctx, req)
 }
 
-func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
+func (l *Router) matchRequest(req *events.APIGatewayProxyRequest, routeType string) (
 	rsrc resource,
 	err error,
 ) {
@@ -280,6 +288,10 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 
 	// find a route that matches the request
 	for _, r := range l.routes {
+		if r.routeType != routeType {
+			continue
+		}
+
 		// does the path match?
 		matches := r.re.FindStringSubmatch(req.Path)
 		if matches == nil {
