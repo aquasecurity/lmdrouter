@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -26,6 +27,21 @@ func MarshalResponse(status int, headers map[string]string, data interface{}) (
 	if headers == nil {
 		headers = make(map[string]string)
 	}
+
+	corsMethods := os.Getenv("CORS_METHODS")
+	corsOrigins := os.Getenv("CORS_ORIGIN")
+
+	if len(corsMethods) == 0 {
+		corsMethods = "*"
+	}
+
+	if len(corsOrigins) == 0 {
+		corsOrigins = "*"
+	}
+
+	headers["Access-Control-Allow-Headers"] = "*"
+	headers["Access-Control-Allow-Methods"] = corsMethods
+	headers["Access-Control-Allow-Origin"] = corsOrigins
 	headers["Content-Type"] = "application/json; charset=UTF-8"
 
 	return events.APIGatewayProxyResponse{
@@ -53,14 +69,27 @@ func HandleError(err error) (events.APIGatewayProxyResponse, error) {
 	var httpErr HTTPError
 	if !errors.As(err, &httpErr) {
 		httpErr = HTTPError{
-			Code:    http.StatusInternalServerError,
+			Status:  http.StatusInternalServerError,
 			Message: err.Error(),
 		}
 	}
 
-	if httpErr.Code >= 500 && !ExposeServerErrors {
-		httpErr.Message = http.StatusText(httpErr.Code)
+	if httpErr.Status >= 500 && !ExposeServerErrors {
+		httpErr.Message = http.StatusText(httpErr.Status)
 	}
 
-	return MarshalResponse(httpErr.Code, nil, httpErr)
+	return MarshalResponse(httpErr.Status, nil, httpErr)
+}
+
+func HandleHTTPError(status int, err error) (events.APIGatewayProxyResponse, error) {
+	httpErr := HTTPError{
+		Status:  status,
+		Message: err.Error(),
+	}
+
+	if httpErr.Status >= 500 && !ExposeServerErrors {
+		httpErr.Message = http.StatusText(httpErr.Status)
+	}
+
+	return MarshalResponse(httpErr.Status, nil, httpErr)
 }
