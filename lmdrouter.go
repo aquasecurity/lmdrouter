@@ -1,4 +1,4 @@
-// lmdrouter is a simple-to-use library for writing AWS Lambda functions in Go
+// Package lmdrouter is a simple-to-use library for writing AWS Lambda functions in Go
 // that listen to events of type API Gateway Proxy Request (represented by the
 // `events.APIGatewayProxyRequest` type of the github.com/aws-lambda-go/events
 // package).
@@ -216,7 +216,26 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 		},
 	}
 
+	r.methods["OPTIONS"] = resource{
+		handler: l.GetOptionsHandler(),
+		hasMiddleware: hasMiddleware{
+			middleware: middleware,
+		},
+	}
+
 	l.routes[path] = r
+}
+
+func (l *Router) GetOptionsHandler() Handler {
+	return func(context.Context, events.APIGatewayProxyRequest) (
+		events.APIGatewayProxyResponse,
+		error,
+	) {
+		return events.APIGatewayProxyResponse{
+			StatusCode: 200,
+			Body:       "Blanket CORS request",
+		}, nil
+	}
 }
 
 // Handler receives a context and an API Gateway Proxy request, and handles the
@@ -274,7 +293,7 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 	req.Path = strings.TrimSuffix(req.Path, "/")
 
 	negErr := HTTPError{
-		Code:    http.StatusNotFound,
+		Status:  http.StatusNotFound,
 		Message: "No such resource",
 	}
 
@@ -293,7 +312,7 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 			// we matched a route, but it didn't support this method. Mark negErr
 			// with a 405 error, but continue, we might match another route
 			negErr = HTTPError{
-				Code:    http.StatusMethodNotAllowed,
+				Status:  http.StatusMethodNotAllowed,
 				Message: fmt.Sprintf("%s requests not supported by this resource", req.HTTPMethod),
 			}
 			continue
@@ -303,7 +322,7 @@ func (l *Router) matchRequest(req *events.APIGatewayProxyRequest) (
 		for i, param := range r.paramNames {
 			if len(matches)-1 < len(r.paramNames) {
 				return rsrc, HTTPError{
-					Code:    http.StatusInternalServerError,
+					Status:  http.StatusInternalServerError,
 					Message: "Failed matching path parameters",
 				}
 			}

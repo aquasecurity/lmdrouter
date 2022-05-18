@@ -93,7 +93,7 @@ func TestRouter(t *testing.T) {
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
 			assert.True(t, ok, "Error must be an HTTP error")
-			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Code, "Error code must be 405")
+			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "Error code must be 405")
 		})
 
 		t.Run("GET /api/fake-id", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestRouter(t *testing.T) {
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
 			assert.True(t, ok, "Error must be an HTTP error")
-			assert.Equal(t, http.StatusNotFound, httpErr.Code, "Error code must be 404")
+			assert.Equal(t, http.StatusNotFound, httpErr.Status, "Error code must be 404")
 		})
 
 		t.Run("GET /api/fake-id/stuff/fakey-fake", func(t *testing.T) {

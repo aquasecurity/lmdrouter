@@ -5,7 +5,6 @@ import "time"
 type mockConst string
 
 const (
-	mockConstOne mockConst = "one"
 	mockConstTwo mockConst = "two"
 )
 

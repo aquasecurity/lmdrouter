@@ -145,7 +145,7 @@ func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (
 
 	if err != nil {
 		return HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("invalid request body: %s", err),
 		}
 	}
@@ -253,7 +253,7 @@ func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 	value, err = strconv.ParseInt(str, 10, 64)
 	if err != nil {
 		return value, HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid integer", param),
 		}
 	}
@@ -269,7 +269,7 @@ func parseUint64Param(param, str string, ok bool) (value uint64, err error) {
 	value, err = strconv.ParseUint(str, 10, 64)
 	if err != nil {
 		return value, HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid, positive integer", param),
 		}
 	}
@@ -285,7 +285,7 @@ func parseFloat64Param(param, str string, ok bool) (value float64, err error) {
 	value, err = strconv.ParseFloat(str, 64)
 	if err != nil {
 		return value, HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid floating point number", param),
 		}
 	}
