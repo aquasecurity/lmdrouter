@@ -19,12 +19,12 @@ import (
 
 var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 
-// UnmarshalRequest "fills" out a target Go struct with data from the request.
-// If body is true, then the request body is assumed to be JSON and simply
-// unmarshaled into the target (taking into account that the request body may
+// UnmarshalRequest "fills" out a target Go struct with data from the req.
+// If body is true, then the req body is assumed to be JSON and simply
+// unmarshaled into the target (taking into account that the req body may
 // be base-64 encoded). After that, or if body is false, the function will
 // traverse the exported fields of the target struct, and fill those that
-// include the "lambda" struct tag with values taken from the request's query
+// include the "lambda" struct tag with values taken from the req's query
 // string parameters, path parameters and headers, according to the field's
 // struct tag definition. This means a struct value can be filled with data from
 // the body, the path, the query string and the headers at the same time.
@@ -145,8 +145,8 @@ func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (
 
 	if err != nil {
 		return HTTPError{
-			Code:    http.StatusBadRequest,
-			Message: fmt.Sprintf("invalid request body: %s", err),
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprintf("invalid req body: %s", err),
 		}
 	}
 
@@ -253,7 +253,7 @@ func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 	value, err = strconv.ParseInt(str, 10, 64)
 	if err != nil {
 		return value, HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid integer", param),
 		}
 	}
@@ -269,7 +269,7 @@ func parseUint64Param(param, str string, ok bool) (value uint64, err error) {
 	value, err = strconv.ParseUint(str, 10, 64)
 	if err != nil {
 		return value, HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid, positive integer", param),
 		}
 	}
@@ -285,7 +285,7 @@ func parseFloat64Param(param, str string, ok bool) (value float64, err error) {
 	value, err = strconv.ParseFloat(str, 64)
 	if err != nil {
 		return value, HTTPError{
-			Code:    http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid floating point number", param),
 		}
 	}

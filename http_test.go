@@ -31,7 +31,7 @@ func TestHTTPHandler(t *testing.T) {
 
 		assert.Equal(t, nil, err, "Error must not be nil")
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
-		assert.True(t, len(log) > 0, "Log must have items")
+		assert.True(t, len(testLog) > 0, "Log must have items")
 	})
 
 	t.Run("POST /api with auth", func(t *testing.T) {
@@ -41,7 +41,7 @@ func TestHTTPHandler(t *testing.T) {
 			nil,
 		)
 		if err != nil {
-			t.Fatalf("Request creation unexpectedly failed: %s", err)
+			t.Fatalf("Req creation unexpectedly failed: %s", err)
 		}
 
 		req.Header.Set("Authorization", "Bearer fake-token")
@@ -55,7 +55,7 @@ func TestHTTPHandler(t *testing.T) {
 		res, err := http.Get(ts.URL + "/api")
 		assert.Equal(t, nil, err, "Error must not be nil")
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
-		assert.True(t, len(log) > 0, "Log must have items")
+		assert.True(t, len(testLog) > 0, "Log must have items")
 	})
 
 	t.Run("GET /api/something/stuff", func(t *testing.T) {

@@ -5,7 +5,6 @@ import "time"
 type mockConst string
 
 const (
-	mockConstOne mockConst = "one"
 	mockConstTwo mockConst = "two"
 )
 
@@ -17,7 +16,7 @@ const (
 	numberThree Number = "three"
 )
 
-type mockListRequest struct {
+type mockListReq struct {
 	ID         string              `lambda:"path.id"`
 	Page       int64               `lambda:"query.page"`
 	PageSize   int64               `lambda:"query.page_size"`
@@ -35,12 +34,12 @@ type mockListRequest struct {
 	Encoding   []string            `lambda:"header.Accept-Encoding"`
 }
 
-type mockGetRequest struct {
+type mockGetReq struct {
 	ID            string `lambda:"path.id"`
 	ShowSomething bool   `lambda:"query.show_something"`
 }
 
-type mockPostRequest struct {
+type mockPostReq struct {
 	ID   string    `lambda:"path.id"`
 	Name string    `json:"name"`
 	Date time.Time `json:"date"`

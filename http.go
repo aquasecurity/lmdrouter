@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -14,30 +15,46 @@ import (
 // lmdrouter applications to be used outside of AWS Lambda environments, most
 // likely for local development purposes
 func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// convert request into an events.APIGatewayProxyRequest object
-	singleValueHeaders := convertMap(map[string][]string(r.Header))
+	// convert req into an events.APIGatewayProxyRequest object
+	singleValueHeaders := convertMap(r.Header)
 	singleValueQuery := convertMap(
-		map[string][]string(r.URL.Query()),
+		r.URL.Query(),
 	)
+
+	corsMethods := os.Getenv("CORS_METHODS")
+	corsOrigins := os.Getenv("CORS_ORIGIN")
+
+	if len(corsMethods) == 0 {
+		corsMethods = "*"
+	}
+
+	if len(corsOrigins) == 0 {
+		corsOrigins = "*"
+	}
+
+	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Methods", corsMethods)
+	w.Header().Set("Access-Control-Allow-Origin", corsOrigins)
+	w.Header().Set("Content-Type", "application/json")
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(500)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": fmt.Sprintf("Failed reading request body: %s", err),
+			"error": fmt.Sprintf("Failed reading req body: %s", err),
 		}) // nolint: errcheck
 		return
 	}
 
 	event := events.APIGatewayProxyRequest{
-		Path:                            r.URL.Path,
+		Body:                            string(body),
 		HTTPMethod:                      r.Method,
 		Headers:                         singleValueHeaders,
 		MultiValueHeaders:               map[string][]string(r.Header),
-		QueryStringParameters:           singleValueQuery,
 		MultiValueQueryStringParameters: map[string][]string(r.URL.Query()),
-		Body:                            string(body),
+		Path:                            r.URL.Path,
+		QueryStringParameters:           singleValueQuery,
 	}
 
 	res, err := l.Handler(r.Context(), event)

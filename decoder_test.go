@@ -14,9 +14,9 @@ type stringAliasExample string
 
 const aliasExample stringAliasExample = "world"
 
-func Test_UnmarshalRequest(t *testing.T) {
+func Test_UnmarshalReq(t *testing.T) {
 	t.Run("valid path&query input", func(t *testing.T) {
-		var input mockListRequest
+		var input mockListReq
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				PathParameters: map[string]string{
@@ -34,14 +34,14 @@ func Test_UnmarshalRequest(t *testing.T) {
 					"commaSplit": "one,two,three",
 				},
 				MultiValueQueryStringParameters: map[string][]string{
-					"terms":   []string{"one", "two"},
-					"numbers": []string{"1.2", "3.5", "666.666"},
+					"terms":   {"one", "two"},
+					"numbers": {"1.2", "3.5", "666.666"},
 				},
 				Headers: map[string]string{
 					"Accept-Language": "en-us",
 				},
 				MultiValueHeaders: map[string][]string{
-					"Accept-Encoding": []string{"gzip", "deflate"},
+					"Accept-Encoding": {"gzip", "deflate"},
 				},
 			},
 			false,
@@ -69,7 +69,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 	})
 
 	t.Run("invalid path&query input", func(t *testing.T) {
-		var input mockListRequest
+		var input mockListReq
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				PathParameters: map[string]string{
@@ -86,13 +86,13 @@ func Test_UnmarshalRequest(t *testing.T) {
 		var httpErr HTTPError
 		ok := errors.As(err, &httpErr)
 		assert.True(t, ok, "Error must be an HTTPError")
-		assert.Equal(t, http.StatusBadRequest, httpErr.Code, "Error code must be 400")
+		assert.Equal(t, http.StatusBadRequest, httpErr.Status, "Error code must be 400")
 	})
 
 	fakeDate := time.Date(2020, 3, 23, 11, 33, 0, 0, time.UTC)
 
 	t.Run("valid body input, not base64", func(t *testing.T) {
-		var input mockPostRequest
+		var input mockPostReq
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: false,
@@ -112,7 +112,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 	})
 
 	t.Run("invalid body input, not base64", func(t *testing.T) {
-		var input mockPostRequest
+		var input mockPostReq
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: false,
@@ -126,7 +126,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 	})
 
 	t.Run("valid body input, base64", func(t *testing.T) {
-		var input mockPostRequest
+		var input mockPostReq
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: true,
@@ -142,7 +142,7 @@ func Test_UnmarshalRequest(t *testing.T) {
 	})
 
 	t.Run("invalid body input, base64", func(t *testing.T) {
-		var input mockPostRequest
+		var input mockPostReq
 		err := UnmarshalRequest(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: true,

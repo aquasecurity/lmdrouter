@@ -13,7 +13,7 @@ import (
 	"github.com/jgroeneveld/trial/assert"
 )
 
-var log []string
+var testLog []string
 
 func TestRouter(t *testing.T) {
 	lmd := NewRouter("/api", logger)
@@ -63,13 +63,13 @@ func TestRouter(t *testing.T) {
 		})
 	})
 
-	t.Run("Requests matched correctly", func(t *testing.T) {
+	t.Run("Reqs matched correctly", func(t *testing.T) {
 		t.Run("POST /api", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
 				HTTPMethod: "POST",
 				Path:       "/api",
 			}
-			_, err := lmd.matchRequest(&req)
+			_, err := lmd.matchReq(&req)
 			assert.Equal(t, nil, err, "Error must be nil")
 		})
 
@@ -79,7 +79,7 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: "POST",
 				Path:       "/api/",
 			}
-			_, err := lmd.matchRequest(&req)
+			_, err := lmd.matchReq(&req)
 			assert.Equal(t, nil, err, "Error must be nil")
 		})
 
@@ -88,12 +88,12 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: "DELETE",
 				Path:       "/api",
 			}
-			_, err := lmd.matchRequest(&req)
+			_, err := lmd.matchReq(&req)
 			assert.NotEqual(t, nil, err, "Error must not be nil")
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
 			assert.True(t, ok, "Error must be an HTTP error")
-			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Code, "Error code must be 405")
+			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "Error code must be 405")
 		})
 
 		t.Run("GET /api/fake-id", func(t *testing.T) {
@@ -101,7 +101,7 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: "GET",
 				Path:       "/api/fake-id",
 			}
-			_, err := lmd.matchRequest(&req)
+			_, err := lmd.matchReq(&req)
 			assert.Equal(t, nil, err, "Error must be nil")
 			assert.Equal(t, "fake-id", req.PathParameters["id"], "ID must be correct")
 		})
@@ -111,12 +111,12 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: "GET",
 				Path:       "/api/fake-id/bla",
 			}
-			_, err := lmd.matchRequest(&req)
+			_, err := lmd.matchReq(&req)
 			assert.NotEqual(t, nil, err, "Error must not be nil")
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
 			assert.True(t, ok, "Error must be an HTTP error")
-			assert.Equal(t, http.StatusNotFound, httpErr.Code, "Error code must be 404")
+			assert.Equal(t, http.StatusNotFound, httpErr.Status, "Error code must be 404")
 		})
 
 		t.Run("GET /api/fake-id/stuff/fakey-fake", func(t *testing.T) {
@@ -124,14 +124,14 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: "GET",
 				Path:       "/api/fake-id/stuff/fakey-fake",
 			}
-			_, err := lmd.matchRequest(&req)
+			_, err := lmd.matchReq(&req)
 			assert.Equal(t, nil, err, "Error must be nil")
 			assert.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
 			assert.Equal(t, "fakey-fake", req.PathParameters["fake"], "'fake' must be correct")
 		})
 	})
 
-	t.Run("Requests execute correctly", func(t *testing.T) {
+	t.Run("Reqs execute correctly", func(t *testing.T) {
 		t.Run("POST /api without auth", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
 				HTTPMethod: "POST",
@@ -140,11 +140,11 @@ func TestRouter(t *testing.T) {
 			res, err := lmd.Handler(context.Background(), req)
 			assert.Equal(t, nil, err, "Error must not be nil")
 			assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
-			assert.True(t, len(log) > 0, "Log must have items")
+			assert.True(t, len(testLog) > 0, "Log must have items")
 			assert.Equal(
 				t,
 				"[ERR] [POST /api] [401]",
-				log[len(log)-1],
+				testLog[len(testLog)-1],
 				"Last long line must be correct",
 			)
 		})
@@ -170,11 +170,11 @@ func TestRouter(t *testing.T) {
 			res, err := lmd.Handler(context.Background(), req)
 			assert.Equal(t, nil, err, "Error must not be nil")
 			assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
-			assert.True(t, len(log) > 0, "Log must have items")
+			assert.True(t, len(testLog) > 0, "Log must have items")
 			assert.Equal(
 				t,
 				"[INF] [GET /api] [200]",
-				log[len(log)-1],
+				testLog[len(testLog)-1],
 				"Last long line must be correct",
 			)
 		})
@@ -207,7 +207,7 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: "POST",
 				Path:       "/foo/bar",
 			})
-			assert.Equal(t, "/foo/bar", res.Body, "request must match /foo/bar route")
+			assert.Equal(t, "/foo/bar", res.Body, "req must match /foo/bar route")
 		}
 
 		res, _ := router.Handler(context.Background(), events.APIGatewayProxyRequest{
@@ -229,7 +229,7 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	// parse input
-	var input mockListRequest
+	var input mockListReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
 		return HandleError(err)
@@ -251,7 +251,7 @@ func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
-	var input mockPostRequest
+	var input mockPostReq
 	err = UnmarshalRequest(req, true, &input)
 	if err != nil {
 		return HandleError(err)
@@ -272,7 +272,7 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	// parse input
-	var input mockGetRequest
+	var input mockGetReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
 		return HandleError(err)
@@ -292,7 +292,7 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	// parse input
-	var input mockListRequest
+	var input mockListReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
 		return HandleError(err)
@@ -332,7 +332,7 @@ func logger(next Handler) Handler {
 			}
 		}
 
-		log = append(log, fmt.Sprintf(
+		testLog = append(testLog, fmt.Sprintf(
 			format,
 			level,
 			req.HTTPMethod,
