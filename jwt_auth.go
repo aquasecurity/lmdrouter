@@ -13,12 +13,17 @@ import (
 )
 
 type AdminClaim struct {
+	ExpirationDate time.Time
+	FullName       string
 	ID             string
 	Level          string
-	ExpirationDate time.Time
 }
 
-func GenerateJwt(adminID, adminLevel string, expirationDate *time.Time) (string, int, error) {
+func GenerateJwt(adminFullName, adminID, adminLevel string, expirationDate *time.Time) (string, int, error) {
+	if adminFullName == "" {
+		return "", 400, fmt.Errorf("unable to generate jwt with empty adminFullName %s", adminFullName)
+	}
+
 	if adminID == "" {
 		return "", 400, fmt.Errorf("unable to generate jwt with empty adminID %s", adminID)
 	}
@@ -36,6 +41,7 @@ func GenerateJwt(adminID, adminLevel string, expirationDate *time.Time) (string,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"adminFullName":  adminFullName,
 		"adminID":        adminID,
 		"adminLevel":     adminLevel,
 		"expirationDate": expirationDate,
@@ -86,6 +92,7 @@ func Verify(userJwt string) (*AdminClaim, int, error) {
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		adminFullName := claims["adminFullName"].(string)
 		adminID := claims["adminID"].(string)
 		adminLevel := claims["adminLevel"].(string)
 		expirationDate := claims["expirationDate"].(string)
@@ -112,9 +119,10 @@ func Verify(userJwt string) (*AdminClaim, int, error) {
 		}
 
 		return &AdminClaim{
+			ExpirationDate: expirationDateAsTime,
+			FullName:       adminFullName,
 			ID:             adminID,
 			Level:          adminLevel,
-			ExpirationDate: expirationDateAsTime,
 		}, http.StatusOK, nil
 	}
 
@@ -126,7 +134,7 @@ var secret = os.Getenv("HMAC_SECRET")
 func getBinarySecret() []byte {
 	data, err := hex.DecodeString(secret)
 	if err != nil {
-		log.Fatalf("Can't decode the secret")
+		log.Fatalf("cannot decode the secret")
 	}
 
 	return data

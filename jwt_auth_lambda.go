@@ -23,6 +23,7 @@ func DecodeJWTMiddleware(next Handler) Handler {
 			return HandleHTTPError(httpStatus, err)
 		}
 
+		ctx = context.WithValue(ctx, "adminFullName", adminClaim.FullName)
 		ctx = context.WithValue(ctx, "adminID", adminClaim.ID)
 		ctx = context.WithValue(ctx, "adminLevel", adminClaim.Level)
 		ctx = context.WithValue(ctx, "expirationDate", adminClaim.ExpirationDate)
