@@ -1,4 +1,4 @@
-module github.com/seantcanavan/lmdrouter
+module github.com/seantcanavan/lmdrouter/v2
 
 go 1.18
 
