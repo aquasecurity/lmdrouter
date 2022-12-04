@@ -40,24 +40,23 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 //
 // Example struct (no body):
 //
-//     type ListPostsInput struct {
-//         ID          uint64   `lambda:"path.id"`
-//         Page        uint64   `lambda:"query.page"`
-//         PageSize    uint64   `lambda:"query.page_size"`
-//         Search      string   `lambda:"query.search"`
-//         ShowDrafts  bool     `lambda:"query.show_hidden"`
-//         Languages   []string `lambda:"header.Accept-Language"`
-//     }
+//	type ListPostsInput struct {
+//	    ID          uint64   `lambda:"path.id"`
+//	    Page        uint64   `lambda:"query.page"`
+//	    PageSize    uint64   `lambda:"query.page_size"`
+//	    Search      string   `lambda:"query.search"`
+//	    ShowDrafts  bool     `lambda:"query.show_hidden"`
+//	    Languages   []string `lambda:"header.Accept-Language"`
+//	}
 //
 // Example struct (JSON body):
 //
-//     type UpdatePostInput struct {
-//         ID          uint64   `lambda:"path.id"`
-//         Author      string   `lambda:"header.Author"`
-//         Title       string   `json:"title"`
-//         Content     string   `json:"content"`
-//     }
-//
+//	type UpdatePostInput struct {
+//	    ID          uint64   `lambda:"path.id"`
+//	    Author      string   `lambda:"header.Author"`
+//	    Title       string   `json:"title"`
+//	    Content     string   `json:"content"`
+//	}
 func UnmarshalRequest(
 	req events.APIGatewayProxyRequest,
 	body bool,
@@ -189,7 +188,88 @@ func unmarshalField(
 	case reflect.Ptr:
 		if val, ok := params[param]; ok {
 			switch typeField.Elem().Kind() {
-			case reflect.Int, reflect.Int32, reflect.Int64, reflect.String, reflect.Float32, reflect.Float64:
+			case reflect.Int:
+				value, err := parseInt64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := int(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Int8:
+				value, err := parseInt64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := int8(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Int16:
+				value, err := parseInt64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := int16(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Int32:
+				value, err := parseInt64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := int32(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Int64:
+				value, err := parseInt64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				valueField.Set(reflect.ValueOf(&value))
+			case reflect.Uint:
+				value, err := parseUint64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := uint(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Uint8:
+				value, err := parseUint64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := uint8(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Uint16:
+				value, err := parseUint64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := uint16(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Uint32:
+				value, err := parseUint64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := uint32(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Uint64:
+				value, err := parseUint64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				valueField.Set(reflect.ValueOf(&value))
+			case reflect.Float32:
+				value, err := parseFloat64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				convertedValue := float32(value)
+				valueField.Set(reflect.ValueOf(&convertedValue))
+			case reflect.Float64:
+				value, err := parseFloat64Param(param, val, ok)
+				if err != nil {
+					return err
+				}
+				valueField.Set(reflect.ValueOf(&value))
+			case reflect.String:
 				valueField.Set(reflect.ValueOf(&val).Convert(typeField))
 			case reflect.Struct:
 				if typeField.Elem() == reflect.TypeOf(time.Now()) {

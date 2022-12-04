@@ -27,6 +27,8 @@ type mockListRequest struct {
 	Bool       bool                `lambda:"query.bool"`
 	PBoolOne   *bool               `lambda:"query.pbool1"`
 	PBoolTwo   *bool               `lambda:"query.pbool2"`
+	PIntOne    *int                `lambda:"query.pint1"`
+	PIntTwo    *int                `lambda:"query.pint2"`
 	Time       *time.Time          `lambda:"query.time"`
 	Alias      stringAliasExample  `lambda:"query.alias"`
 	AliasPtr   *stringAliasExample `lambda:"query.alias_ptr"`
