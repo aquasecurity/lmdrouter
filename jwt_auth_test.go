@@ -1,6 +1,7 @@
 package lmdrouter
 
 import (
+	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
 	"math/rand"
 	"net/http"
@@ -191,4 +192,20 @@ func GenerateRandomString(n int) string {
 	}
 
 	return string(b)
+}
+
+func GenerateCustomMapClaims() *jwt.MapClaims {
+	return &jwt.MapClaims{
+		AudienceKey:  GenerateRandomString(10),
+		ExpiresAtKey: GenerateRandomString(10),
+		FirstNameKey: GenerateRandomString(10),
+		FullNameKey:  GenerateRandomString(10),
+		IDKey:        GenerateRandomString(10),
+		IssuedAtKey:  time.Now().Unix(),
+		IssuerKey:    GenerateRandomString(10),
+		LevelKey:     GenerateRandomString(10),
+		NotBeforeKey: time.Now().Add(time.Hour * -1).Unix(),
+		SubjectKey:   GenerateRandomString(10),
+		UserTypeKey:  GenerateRandomString(10),
+	}
 }
