@@ -10,8 +10,6 @@ import (
 	"os"
 )
 
-var secret = os.Getenv("HMAC_SECRET")
-
 type ExpandedClaims struct {
 	Audience  string `json:"aud"`
 	ExpiresAt int64  `json:"exp"`
@@ -107,9 +105,11 @@ func VerifyJWT(userJWT string) (*jwt.MapClaims, error) {
 }
 
 func getBinarySecret() []byte {
+	secret := os.Getenv("HMAC_SECRET")
 	if secret == "" {
 		log.Fatalf("cannot encode / decode with an empty secret")
 	}
+
 	data, err := hex.DecodeString(secret)
 	if err != nil {
 		log.Fatalf("cannot decode the secret")

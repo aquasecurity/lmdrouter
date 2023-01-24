@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
+	"github.com/joho/godotenv"
 	"log"
 	"math/rand"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -83,11 +85,18 @@ func TestExtractStandardClaims(t *testing.T) {
 
 func TestSign(t *testing.T) {
 	t.Run("verify signed jwt secret with valid standard claim", func(t *testing.T) {
-		fmt.Println(fmt.Sprintf("secret is [%s]", secret))
 		customClaims := GenerateCustomMapClaims()
 		signedJWT, err := Sign(customClaims)
 		assert.Nil(t, err)
 		assert.True(t, len(signedJWT) > 1)
+
+		fmt.Println(fmt.Sprintf("signedJWT [%s]", signedJWT))
+
+		compiledRegex, compileErr := regexp.Compile("^[A-Za-z0-9\\\\-_=]+\\\\.[A-Za-z0-9\\\\-_=]+(\\\\.[A-Za-z0-9\\\\-_.+/=]+)?$")
+		assert.Nil(t, compileErr)
+
+		matched := compiledRegex.MatchString(signedJWT)
+		assert.True(t, matched)
 	})
 }
 
