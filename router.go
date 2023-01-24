@@ -233,7 +233,7 @@ func (l *Router) GetOptionsHandler() Handler {
 		error,
 	) {
 		return events.APIGatewayProxyResponse{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       "Blanket CORS req",
 		}, nil
 	}
@@ -293,7 +293,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 	// remove trailing slash from req path
 	req.Path = strings.TrimSuffix(req.Path, "/")
 
-	negErr := HTTPError{
+	negErr := response.HTTPError{
 		Status:  http.StatusNotFound,
 		Message: "No such resource",
 	}
@@ -312,7 +312,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		if !ok {
 			// we matched a route, but it didn't support this method. Mark negErr
 			// with a 405 error, but continue, we might match another route
-			negErr = HTTPError{
+			negErr = response.HTTPError{
 				Status:  http.StatusMethodNotAllowed,
 				Message: fmt.Sprintf("%s reqs not supported by this resource", req.HTTPMethod),
 			}
@@ -322,7 +322,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		// process path parameters
 		for i, param := range r.paramNames {
 			if len(matches)-1 < len(r.paramNames) {
-				return rsrc, HTTPError{
+				return rsrc, response.HTTPError{
 					Status:  http.StatusInternalServerError,
 					Message: "Failed matching path parameters",
 				}

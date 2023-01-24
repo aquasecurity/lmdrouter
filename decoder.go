@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/seantcanavan/lmdrouter/response"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -58,11 +59,7 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 //         Content     string   `json:"content"`
 //     }
 //
-func UnmarshalRequest(
-	req events.APIGatewayProxyRequest,
-	body bool,
-	target interface{},
-) error {
+func UnmarshalRequest(req events.APIGatewayProxyRequest, body bool, target interface{}) error {
 	if body {
 		err := unmarshalBody(req, target)
 		if err != nil {
@@ -71,6 +68,15 @@ func UnmarshalRequest(
 	}
 
 	return unmarshalEvent(req, target)
+}
+
+func UnmarshalResponse(res events.APIGatewayProxyResponse, target interface{}) error {
+	rv := reflect.ValueOf(target)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("invalid unmarshal target, must be pointer to struct")
+	}
+
+	return json.Unmarshal([]byte(res.Body), target)
 }
 
 func unmarshalEvent(req events.APIGatewayProxyRequest, target interface{}) error {
@@ -128,9 +134,7 @@ func unmarshalEvent(req events.APIGatewayProxyRequest, target interface{}) error
 	return nil
 }
 
-func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (
-	err error,
-) {
+func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (err error) {
 	if req.IsBase64Encoded {
 		var body []byte
 		body, err = base64.StdEncoding.DecodeString(req.Body)
@@ -144,7 +148,7 @@ func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (
 	}
 
 	if err != nil {
-		return HTTPError{
+		return response.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("invalid req body: %s", err),
 		}
@@ -252,7 +256,7 @@ func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 
 	value, err = strconv.ParseInt(str, 10, 64)
 	if err != nil {
-		return value, HTTPError{
+		return value, response.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid integer", param),
 		}
@@ -268,7 +272,7 @@ func parseUint64Param(param, str string, ok bool) (value uint64, err error) {
 
 	value, err = strconv.ParseUint(str, 10, 64)
 	if err != nil {
-		return value, HTTPError{
+		return value, response.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid, positive integer", param),
 		}
@@ -284,7 +288,7 @@ func parseFloat64Param(param, str string, ok bool) (value float64, err error) {
 
 	value, err = strconv.ParseFloat(str, 64)
 	if err != nil {
-		return value, HTTPError{
+		return value, response.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid floating point number", param),
 		}

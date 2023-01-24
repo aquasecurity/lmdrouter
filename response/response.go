@@ -18,7 +18,7 @@ const ContentTypeKey = "Content-Type"
 // name of the status code is used as the error message instead.
 var ExposeServerErrors = true
 
-// Success wraps Custom assuming a 200 OK status code and no
+// Success wraps Custom assuming a http.StatusOK status code and no
 // custom headers to return. This was such a common use case I felt it
 // necessary to create a wrapper to make everyone's life easier.
 func Success(data interface{}) (events.APIGatewayProxyResponse, error) {

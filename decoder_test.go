@@ -2,6 +2,7 @@ package lmdrouter
 
 import (
 	"errors"
+	"github.com/seantcanavan/lmdrouter/response"
 	"net/http"
 	"testing"
 	"time"
@@ -132,9 +133,9 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 		assert.NotEqual(t, nil, err, "Error must not be nil")
-		var httpErr HTTPError
+		var httpErr response.HTTPError
 		ok := errors.As(err, &httpErr)
-		assert.True(t, ok, "Error must be an HTTPError")
+		assert.True(t, ok, "Error must be an response.HTTPError")
 		assert.Equal(t, http.StatusBadRequest, httpErr.Status, "Error code must be 400")
 	})
 

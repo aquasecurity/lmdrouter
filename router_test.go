@@ -91,7 +91,7 @@ func TestRouter(t *testing.T) {
 			}
 			_, err := lmd.matchReq(&req)
 			assert.NotEqual(t, nil, err, "Error must not be nil")
-			var httpErr HTTPError
+			var httpErr response.HTTPError
 			ok := errors.As(err, &httpErr)
 			assert.True(t, ok, "Error must be an HTTP error")
 			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "Error code must be 405")
@@ -114,7 +114,7 @@ func TestRouter(t *testing.T) {
 			}
 			_, err := lmd.matchReq(&req)
 			assert.NotEqual(t, nil, err, "Error must not be nil")
-			var httpErr HTTPError
+			var httpErr response.HTTPError
 			ok := errors.As(err, &httpErr)
 			assert.True(t, ok, "Error must be an HTTP error")
 			assert.Equal(t, http.StatusNotFound, httpErr.Status, "Error code must be 404")
@@ -362,7 +362,7 @@ func auth(next Handler) Handler {
 		return response.Custom(
 			http.StatusUnauthorized,
 			map[string]string{"WWW-Authenticate": "Bearer"},
-			HTTPError{http.StatusUnauthorized, "Unauthorized"},
+			response.HTTPError{http.StatusUnauthorized, "Unauthorized"},
 		)
 	}
 }

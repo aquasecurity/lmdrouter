@@ -2,7 +2,6 @@ package response
 
 import (
 	"errors"
-	"github.com/seantcanavan/lmdrouter"
 	"net/http"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 
 func TestHandleError(t *testing.T) {
 	t.Run("Handle an ErrorAndStatus", func(t *testing.T) {
-		res, _ := Error(lmdrouter.HTTPError{
+		res, _ := Error(HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid input",
 		})
@@ -21,7 +20,7 @@ func TestHandleError(t *testing.T) {
 
 	t.Run("Handle an ErrorAndStatus when ExposeServerErrors is true", func(t *testing.T) {
 		ExposeServerErrors = true
-		res, _ := Error(lmdrouter.HTTPError{
+		res, _ := Error(HTTPError{
 			Status:  http.StatusInternalServerError,
 			Message: "database down",
 		})
@@ -31,7 +30,7 @@ func TestHandleError(t *testing.T) {
 
 	t.Run("Handle an ErrorAndStatus when ExposeServerErrors is false", func(t *testing.T) {
 		ExposeServerErrors = false
-		res, _ := Error(lmdrouter.HTTPError{
+		res, _ := Error(HTTPError{
 			Status:  http.StatusInternalServerError,
 			Message: "database down",
 		})
