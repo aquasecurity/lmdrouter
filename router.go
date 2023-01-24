@@ -52,7 +52,7 @@
 //
 // * Provides the ability to automatically "marshal" responses of any type to an
 // API Gateway response (only JSON responses are currently generated). See the
-// MarshalResponse function for more information.
+// Custom function for more information.
 //
 // * Implements net/http.Handler for local development and general usage outside
 //  an AWS Lambda environment.
@@ -62,6 +62,7 @@ package lmdrouter
 import (
 	"context"
 	"fmt"
+	"github.com/seantcanavan/lmdrouter/response"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -145,13 +146,13 @@ type Middleware func(Handler) Handler
 //         var input listSomethingsInput
 //         err = lmdrouter.UnmarshalRequest(req, false, &input)
 //         if err != nil {
-//             return lmdrouter.HandleError(err)
+//             return lmdrouter.Error(err)
 //         }
 //
 //         // call some business logic that generates an output struct
 //         // ...
 //
-//         return lmdrouter.MarshalResponse(http.StatusOK, nil, output)
+//         return lmdrouter.Custom(http.StatusOK, nil, output)
 //    }
 //
 type Handler func(context.Context, events.APIGatewayProxyRequest) (
@@ -270,7 +271,7 @@ func (l *Router) Handler(
 ) (events.APIGatewayProxyResponse, error) {
 	rsrc, err := l.matchReq(&req)
 	if err != nil {
-		return HandleError(err)
+		return response.Error(err)
 	}
 
 	handler := rsrc.handler

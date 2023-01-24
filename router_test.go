@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/seantcanavan/lmdrouter/response"
 	"net/http"
 	"strings"
 	"testing"
@@ -232,7 +233,7 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockListReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
-		return HandleError(err)
+		return response.Error(err)
 	}
 
 	now := time.Now()
@@ -244,7 +245,7 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 		{ID: "three", Name: "Third Item", Date: then},
 	}
 
-	return MarshalResponse(http.StatusOK, nil, output)
+	return response.Custom(http.StatusOK, nil, output)
 }
 
 func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
@@ -254,7 +255,7 @@ func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockPostReq
 	err = UnmarshalRequest(req, true, &input)
 	if err != nil {
-		return HandleError(err)
+		return response.Error(err)
 	}
 
 	output := map[string]string{
@@ -262,7 +263,7 @@ func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 		"url": "https://service.com/api/bla",
 	}
 
-	return MarshalResponse(http.StatusAccepted, map[string]string{
+	return response.Custom(http.StatusAccepted, map[string]string{
 		"Location": output["url"],
 	}, output)
 }
@@ -275,7 +276,7 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockGetReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
-		return HandleError(err)
+		return response.Error(err)
 	}
 
 	output := mockItem{
@@ -284,7 +285,7 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 		Date: time.Now(),
 	}
 
-	return MarshalResponse(http.StatusOK, nil, output)
+	return response.Custom(http.StatusOK, nil, output)
 }
 
 func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
@@ -295,7 +296,7 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockListReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
-		return HandleError(err)
+		return response.Error(err)
 	}
 
 	output := make([]mockItem, len(input.Terms))
@@ -306,7 +307,7 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 		}
 	}
 
-	return MarshalResponse(http.StatusOK, nil, output)
+	return response.Custom(http.StatusOK, nil, output)
 }
 
 func logger(next Handler) Handler {
@@ -358,7 +359,7 @@ func auth(next Handler) Handler {
 			}
 		}
 
-		return MarshalResponse(
+		return response.Custom(
 			http.StatusUnauthorized,
 			map[string]string{"WWW-Authenticate": "Bearer"},
 			HTTPError{http.StatusUnauthorized, "Unauthorized"},
