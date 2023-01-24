@@ -1,4 +1,4 @@
-package lmdrouter
+package jwt
 
 import (
 	"encoding/hex"
@@ -11,6 +11,20 @@ import (
 )
 
 var secret = os.Getenv("HMAC_SECRET")
+
+type ExpandedClaims struct {
+	Audience  string `json:"aud"`
+	ExpiresAt int64  `json:"exp"`
+	FirstName string `json:"firstName"`
+	FullName  string `json:"fullName"`
+	ID        string `json:"jti"`
+	IssuedAt  int64  `json:"iat"`
+	Issuer    string `json:"iss"`
+	Level     string `json:"level"`
+	NotBefore int64  `json:"nbf"`
+	Subject   string `json:"sub"`
+	UserType  string `json:"userType"`
+}
 
 // Use these const values to populate your own custom claim values
 const (
@@ -27,7 +41,41 @@ const (
 	UserTypeKey  = "userType"
 )
 
-func Sign(mapClaims *jwt.MapClaims) (string, error) {
+var ErrBadClaimsObject = errors.New("the provided object to extract claims into is not compatible with the default claim set and its types")
+
+// ExtractCustomClaims takes in a claims map that is used to create JWTs
+// and returns a generic interface value that you can use to convert
+func ExtractCustomClaims(mapClaims jwt.MapClaims, val any) error {
+	jsonBytes, err := json.Marshal(mapClaims)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonBytes, &val)
+	if err != nil {
+		return ErrBadClaimsObject
+	}
+
+	return nil
+}
+
+// ExtractStandardClaims takes in the claims map that is used to create JWTs
+// and returns the standard 7 values expected in all json web tokens
+func ExtractStandardClaims(mapClaims jwt.MapClaims, standardClaims jwt.StandardClaims) error {
+	jsonBytes, err := json.Marshal(mapClaims)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsonBytes, &standardClaims)
+	if err != nil {
+		return ErrBadClaimsObject
+	}
+
+	return nil
+}
+
+func Sign(mapClaims jwt.MapClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, mapClaims)
 
 	// Sign and get the complete encoded token as a string using the secret
@@ -37,38 +85,6 @@ func Sign(mapClaims *jwt.MapClaims) (string, error) {
 	}
 
 	return encodedToken, nil
-}
-
-// ExtractStandardClaims takes in the claims map that is used to create JWTs
-// and returns the standard 7 values expected in all json web tokens
-func ExtractStandardClaims(mapClaims *jwt.MapClaims, standardClaims *jwt.StandardClaims) error {
-	jsonBytes, err := json.Marshal(mapClaims)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(jsonBytes, standardClaims)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// ExtractCustomClaims takes in a claims map that is used to create JWTs
-// and returns a generic interface value that you can use to convert
-func ExtractCustomClaims(claims *jwt.MapClaims, val any) error {
-	jsonBytes, err := json.Marshal(claims)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(jsonBytes, &val)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // VerifyJWT accepts the user JWT from the Authorization header
@@ -91,6 +107,9 @@ func VerifyJWT(userJWT string) (*jwt.MapClaims, error) {
 }
 
 func getBinarySecret() []byte {
+	if secret == "" {
+		log.Fatalf("cannot encode / decode with an empty secret")
+	}
 	data, err := hex.DecodeString(secret)
 	if err != nil {
 		log.Fatalf("cannot decode the secret")
