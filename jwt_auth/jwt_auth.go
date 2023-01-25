@@ -95,13 +95,13 @@ func ExtractCustomClaims(mapClaims jwt.MapClaims, val any) error {
 
 // ExtractStandardClaims takes in the claims map that is used to create JWTs
 // and returns the standard 7 values expected in all json web tokens
-func ExtractStandardClaims(mapClaims jwt.MapClaims, standardClaims jwt.StandardClaims) error {
+func ExtractStandardClaims(mapClaims jwt.MapClaims, standardClaims *jwt.StandardClaims) error {
 	jsonBytes, err := json.Marshal(mapClaims)
 	if err != nil {
 		return err
 	}
 
-	err = json.Unmarshal(jsonBytes, &standardClaims)
+	err = json.Unmarshal(jsonBytes, standardClaims)
 	if err != nil {
 		return ErrBadClaimsObject
 	}

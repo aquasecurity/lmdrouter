@@ -2,9 +2,7 @@ package jwt_auth
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
@@ -21,21 +19,23 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
 		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(utils.GenerateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
-		assert.Nil(t, err) // because the req didn't crash the stack - error is nil
+		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
 		var responseBody response.HTTPError
-		err = json.Unmarshal([]byte(res.Body), &responseBody)
+		err = lmdrouter.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
 		assert.Equal(t, responseBody.Status, res.StatusCode)
 		assert.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
 	})
-	t.Run("verify call to DecodeAndInjectExpandedClaims with a signed JWT", func(t *testing.T) {
+	t.Run("verify context is returned by DecodeAndInjectExpandedClaims with a signed JWT", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
-		signedJWT, err := Sign(jwt.MapClaims{"hello": "there"})
+		expandedClaims := generateExpandedMapClaims()
+
+		signedJWT, err := Sign(expandedClaims)
 		assert.Nil(t, err)
 
 		req := events.APIGatewayProxyRequest{
@@ -46,25 +46,43 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 			RequestContext: utils.GenerateAPIGatewayProxyReq(),
 		}
 
-		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(utils.GenerateEmptySuccessHandler())
+		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(GenerateSuccessHandlerAndMapExpandedContext())
 		res, err := jwtMiddlewareHandler(ctx, req)
-
-		fmt.Println(fmt.Sprintf("ctx is [%+v]", ctx))
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusOK)
+
+		var returnedClaims ExpandedClaims
+		err = lmdrouter.UnmarshalResponse(res, &returnedClaims)
+		assert.Nil(t, err)
+		// this verifies that the context gets set in the middleware inject function since the
+		// dummy handler passed to it as the 'next' call injects the values from its passed
+		// context object into the response body. The function doesn't work this way in practice
+		// however it does allow me to fully unit test it to make sure the context setting is working.
+		// It's hacky and I'm not proud of it but I'm not sure how else to do it.
+		assert.Equal(t, expandedClaims[AudienceKey], returnedClaims.Audience)
+		assert.Equal(t, expandedClaims[ExpiresAtKey], returnedClaims.ExpiresAt)
+		assert.Equal(t, expandedClaims[FirstNameKey], returnedClaims.FirstName)
+		assert.Equal(t, expandedClaims[FullNameKey], returnedClaims.FullName)
+		assert.Equal(t, expandedClaims[IDKey], returnedClaims.ID)
+		assert.Equal(t, expandedClaims[IssuedAtKey], returnedClaims.IssuedAt)
+		assert.Equal(t, expandedClaims[IssuerKey], returnedClaims.Issuer)
+		assert.Equal(t, expandedClaims[LevelKey], returnedClaims.Level)
+		assert.Equal(t, expandedClaims[NotBeforeKey], returnedClaims.NotBefore)
+		assert.Equal(t, expandedClaims[SubjectKey], returnedClaims.Subject)
+		assert.Equal(t, expandedClaims[UserTypeKey], returnedClaims.UserType)
 	})
 }
 
 func TestDecodeAndInjectStandardClaims(t *testing.T) {
 	t.Run("verify error is returned by DecodeAndInjectStandardClaims when missing Authorization header", func(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
-		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(utils.GenerateEmptySuccessHandler())
+		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(utils.GenerateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
-		assert.Nil(t, err) // because the req didn't crash the stack - error is nil
+		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
 		var responseBody response.HTTPError
-		err = json.Unmarshal([]byte(res.Body), &responseBody)
+		err = lmdrouter.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
 		assert.Equal(t, responseBody.Status, res.StatusCode)
@@ -74,7 +92,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
-		standardClaims := GenerateStandardMapClaims()
+		standardClaims := generateStandardMapClaims()
 
 		signedJWT, err := Sign(standardClaims)
 		assert.Nil(t, err)
@@ -87,7 +105,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 			RequestContext: utils.GenerateAPIGatewayProxyReq(),
 		}
 
-		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(GenerateSuccessHandlerAndMapStandardContext())
+		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(GenerateSuccessHandlerAndMapStandardContext())
 		res, err := jwtMiddlewareHandler(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusOK)
@@ -95,12 +113,23 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		var returnedClaims jwt.StandardClaims
 		err = lmdrouter.UnmarshalResponse(res, &returnedClaims)
 		assert.Nil(t, err)
-		assert.Equal(t, standardClaims, returnedClaims)
+		// this verifies that the context gets set in the middleware inject function since the
+		// dummy handler passed to it as the 'next' call injects the values from its passed
+		// context object into the response body. The function doesn't work this way in practice
+		// however it does allow me to fully unit test it to make sure the context setting is working.
+		// It's hacky and I'm not proud of it but I'm not sure how else to do it.
+		assert.Equal(t, returnedClaims.Audience, standardClaims[AudienceKey])
+		assert.Equal(t, returnedClaims.ExpiresAt, standardClaims[ExpiresAtKey])
+		assert.Equal(t, returnedClaims.Id, standardClaims[IDKey])
+		assert.Equal(t, returnedClaims.IssuedAt, standardClaims[IssuedAtKey])
+		assert.Equal(t, returnedClaims.Issuer, standardClaims[IssuerKey])
+		assert.Equal(t, returnedClaims.NotBefore, standardClaims[NotBeforeKey])
+		assert.Equal(t, returnedClaims.Subject, standardClaims[SubjectKey])
 	})
 }
 
 func TestExtractJWT(t *testing.T) {
-	standardClaims := GenerateStandardMapClaims()
+	standardClaims := generateStandardMapClaims()
 	signedJWT, err := Sign(standardClaims)
 	assert.Nil(t, err)
 
@@ -213,6 +242,7 @@ func GenerateSuccessHandlerAndMapStandardContext() lmdrouter.Handler {
 		return response.Custom(http.StatusOK, nil, jwt.StandardClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
+			Id:        ctx.Value(IDKey).(string),
 			IssuedAt:  ctx.Value(IssuedAtKey).(int64),
 			Issuer:    ctx.Value(IssuerKey).(string),
 			NotBefore: ctx.Value(NotBeforeKey).(int64),

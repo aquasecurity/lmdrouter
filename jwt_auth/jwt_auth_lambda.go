@@ -31,7 +31,7 @@ func DecodeAndInjectStandardClaims(next lmdrouter.Handler) lmdrouter.Handler {
 		}
 
 		var standardClaims jwt.StandardClaims
-		err = ExtractStandardClaims(mapClaims, standardClaims)
+		err = ExtractStandardClaims(mapClaims, &standardClaims)
 		if err != nil {
 			return response.ErrorAndStatus(http.StatusInternalServerError, err)
 		}

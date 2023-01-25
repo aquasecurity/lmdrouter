@@ -124,7 +124,7 @@ func TestExtractCustomClaims(t *testing.T) {
 		assert.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
 	})
 	t.Run("verify ExtractCustomClaims works when called with the correct parameters", func(t *testing.T) {
-		customClaims := GenerateExtendedMapClaims()
+		customClaims := generateExpandedMapClaims()
 
 		var expandedClaims ExpandedClaims
 		err := ExtractCustomClaims(customClaims, &expandedClaims)
@@ -148,13 +148,13 @@ func TestExtractStandardClaims(t *testing.T) {
 	t.Run("verify ExtractStandardClaims returns an err when unmarshalling to invalid standard claims object", func(t *testing.T) {
 		extractCustomErr := ExtractStandardClaims(jwt.MapClaims{
 			"exp": utils.GenerateRandomString(10), // exp should be an integer
-		}, jwt.StandardClaims{})
+		}, &jwt.StandardClaims{})
 
 		assert.NotNil(t, extractCustomErr)
 		assert.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
 	})
 	t.Run("verify ExtractCustomClaims works when called with the correct parameters", func(t *testing.T) {
-		customClaims := GenerateExtendedMapClaims()
+		customClaims := generateExpandedMapClaims()
 
 		var standardClaims jwt.StandardClaims
 		err := ExtractCustomClaims(customClaims, &standardClaims)
@@ -171,7 +171,7 @@ func TestExtractStandardClaims(t *testing.T) {
 
 func TestSign(t *testing.T) {
 	t.Run("verify signed jwt secret with valid standard claim", func(t *testing.T) {
-		customClaims := GenerateExtendedMapClaims()
+		customClaims := generateExpandedMapClaims()
 		signedJWT, err := Sign(customClaims)
 		assert.Nil(t, err)
 		assert.True(t, len(signedJWT) > 1)
@@ -186,7 +186,7 @@ func TestVerifyJWT(t *testing.T) {
 		assert.True(t, errors.Is(err, ErrInvalidJWT))
 	})
 	t.Run("verify err when parsing expired token with valid jwt", func(t *testing.T) {
-		customClaims := GenerateExtendedMapClaims()
+		customClaims := generateExpandedMapClaims()
 		customClaims["exp"] = time.Now().Add(time.Hour * -10)
 
 		expiredJWT, signErr := Sign(customClaims)
@@ -198,7 +198,7 @@ func TestVerifyJWT(t *testing.T) {
 	})
 }
 
-func GenerateExtendedMapClaims() jwt.MapClaims {
+func generateExpandedMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
 		AudienceKey:  utils.GenerateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
@@ -214,7 +214,7 @@ func GenerateExtendedMapClaims() jwt.MapClaims {
 	}
 }
 
-func GenerateStandardMapClaims() jwt.MapClaims {
+func generateStandardMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
 		AudienceKey:  utils.GenerateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
