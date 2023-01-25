@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
-	"math/rand"
+	"github.com/seantcanavan/lambda_jwt_router/util"
 	"net/http"
 	"testing"
 	"time"
@@ -307,36 +307,36 @@ func generateSuccessHandlerAndMapStandardContext() lambda_router.Handler {
 
 func generateAPIGatewayProxyReq() events.APIGatewayProxyRequestContext {
 	return events.APIGatewayProxyRequestContext{
-		AccountID:     generateRandomString(10),
-		ResourceID:    generateRandomString(10),
-		OperationName: generateRandomString(10),
-		Stage:         generateRandomString(10),
-		DomainName:    generateRandomString(10),
-		DomainPrefix:  generateRandomString(10),
-		RequestID:     generateRandomString(10),
-		Protocol:      generateRandomString(10),
+		AccountID:     util.GenerateRandomString(10),
+		ResourceID:    util.GenerateRandomString(10),
+		OperationName: util.GenerateRandomString(10),
+		Stage:         util.GenerateRandomString(10),
+		DomainName:    util.GenerateRandomString(10),
+		DomainPrefix:  util.GenerateRandomString(10),
+		RequestID:     util.GenerateRandomString(10),
+		Protocol:      util.GenerateRandomString(10),
 		Identity: events.APIGatewayRequestIdentity{
-			CognitoIdentityPoolID:         generateRandomString(10),
-			AccountID:                     generateRandomString(10),
-			CognitoIdentityID:             generateRandomString(10),
-			Caller:                        generateRandomString(10),
-			APIKey:                        generateRandomString(10),
-			APIKeyID:                      generateRandomString(10),
-			AccessKey:                     generateRandomString(10),
-			SourceIP:                      generateRandomString(10),
-			CognitoAuthenticationType:     generateRandomString(10),
-			CognitoAuthenticationProvider: generateRandomString(10),
-			UserArn:                       generateRandomString(10),
-			UserAgent:                     generateRandomString(10),
-			User:                          generateRandomString(10),
+			CognitoIdentityPoolID:         util.GenerateRandomString(10),
+			AccountID:                     util.GenerateRandomString(10),
+			CognitoIdentityID:             util.GenerateRandomString(10),
+			Caller:                        util.GenerateRandomString(10),
+			APIKey:                        util.GenerateRandomString(10),
+			APIKeyID:                      util.GenerateRandomString(10),
+			AccessKey:                     util.GenerateRandomString(10),
+			SourceIP:                      util.GenerateRandomString(10),
+			CognitoAuthenticationType:     util.GenerateRandomString(10),
+			CognitoAuthenticationProvider: util.GenerateRandomString(10),
+			UserArn:                       util.GenerateRandomString(10),
+			UserAgent:                     util.GenerateRandomString(10),
+			User:                          util.GenerateRandomString(10),
 		},
-		ResourcePath:     generateRandomString(10),
-		Path:             generateRandomString(10),
+		ResourcePath:     util.GenerateRandomString(10),
+		Path:             util.GenerateRandomString(10),
 		Authorizer:       map[string]interface{}{"hi there": "sean"},
-		HTTPMethod:       generateRandomString(10),
-		RequestTime:      generateRandomString(10),
+		HTTPMethod:       util.GenerateRandomString(10),
+		RequestTime:      util.GenerateRandomString(10),
 		RequestTimeEpoch: 0,
-		APIID:            generateRandomString(10),
+		APIID:            util.GenerateRandomString(10),
 	}
 }
 
@@ -354,15 +354,4 @@ func generateEmptyErrorHandler() lambda_router.Handler {
 		error) {
 		return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, errors.New("this error is simulated"))
 	}
-}
-
-func generateRandomString(n int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	rand.Seed(time.Now().UnixNano())
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-
-	return string(b)
 }

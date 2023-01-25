@@ -2,7 +2,7 @@ package lambda_router
 
 import (
 	"errors"
-	"math/rand"
+	"github.com/seantcanavan/lambda_jwt_router/util"
 	"net/http"
 	"testing"
 	"time"
@@ -66,8 +66,8 @@ const aliasExample stringAliasExample = "world"
 
 func TestMarshalLambdaRequest(t *testing.T) {
 	mi := mockItem{
-		ID:   generateRandomString(10),
-		Name: generateRandomString(10),
+		ID:   util.GenerateRandomString(10),
+		Name: util.GenerateRandomString(10),
 	}
 
 	t.Run("verify MarshalReq correctly adds the JSON string to the request body", func(t *testing.T) {
@@ -221,15 +221,4 @@ func Test_UnmarshalReq(t *testing.T) {
 
 		assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
 	})
-}
-
-func generateRandomString(n int) string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	rand.Seed(time.Now().UnixNano())
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-
-	return string(b)
 }

@@ -92,7 +92,7 @@ func TestError(t *testing.T) {
 			Message: "database down",
 		})
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
-		assert.Equal(t, `{"status":500,"message":"Internal Server ErrorRes"}`, res.Body, "body must be correct")
+		assert.Equal(t, `{"status":500,"message":"Internal Server Error"}`, res.Body, "body must be correct")
 	})
 
 	t.Run("Handle a general error when ExposeServerErrors is true", func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestError(t *testing.T) {
 		ExposeServerErrors = false
 		res, _ := ErrorRes(errors.New("database down"))
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
-		assert.Equal(t, `{"status":500,"message":"Internal Server ErrorRes"}`, res.Body, "body must be correct")
+		assert.Equal(t, `{"status":500,"message":"Internal Server Error"}`, res.Body, "body must be correct")
 	})
 }
 
