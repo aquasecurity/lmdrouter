@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
-	"github.com/seantcanavan/lambda_jwt_router/response"
 	"github.com/seantcanavan/lambda_jwt_router/router"
 	"math/rand"
 	"net/http"
@@ -77,7 +76,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
-		var responseBody response.HTTPError
+		var responseBody router.HTTPError
 		err = router.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
@@ -136,7 +135,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
-		var responseBody response.HTTPError
+		var responseBody router.HTTPError
 		err = router.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
@@ -270,7 +269,7 @@ func GenerateSuccessHandlerAndMapExpandedContext() router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return response.Custom(http.StatusOK, nil, ExpandedClaims{
+		return router.Custom(http.StatusOK, nil, ExpandedClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			FirstName: ctx.Value(FirstNameKey).(string),
@@ -294,7 +293,7 @@ func GenerateSuccessHandlerAndMapStandardContext() router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return response.Custom(http.StatusOK, nil, jwt.StandardClaims{
+		return router.Custom(http.StatusOK, nil, jwt.StandardClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			Id:        ctx.Value(IDKey).(string),
@@ -345,7 +344,7 @@ func GenerateEmptySuccessHandler() router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return response.Empty()
+		return router.Empty()
 	}
 }
 
@@ -353,7 +352,7 @@ func GenerateEmptyErrorHandler() router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return response.ErrorAndStatus(http.StatusInternalServerError, errors.New("this error is simulated"))
+		return router.ErrorAndStatus(http.StatusInternalServerError, errors.New("this error is simulated"))
 	}
 }
 

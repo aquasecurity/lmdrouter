@@ -1,13 +1,10 @@
 package router
 
-// nolint: unused
-
 import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -151,7 +148,7 @@ func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (err e
 	}
 
 	if err != nil {
-		return response.HTTPError{
+		return HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("invalid req body: %s", err),
 		}
@@ -259,7 +256,7 @@ func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 
 	value, err = strconv.ParseInt(str, 10, 64)
 	if err != nil {
-		return value, response.HTTPError{
+		return value, HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid integer", param),
 		}
@@ -275,7 +272,7 @@ func parseUint64Param(param, str string, ok bool) (value uint64, err error) {
 
 	value, err = strconv.ParseUint(str, 10, 64)
 	if err != nil {
-		return value, response.HTTPError{
+		return value, HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid, positive integer", param),
 		}
@@ -291,7 +288,7 @@ func parseFloat64Param(param, str string, ok bool) (value float64, err error) {
 
 	value, err = strconv.ParseFloat(str, 64)
 	if err != nil {
-		return value, response.HTTPError{
+		return value, HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid floating point number", param),
 		}

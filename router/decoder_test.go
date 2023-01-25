@@ -2,7 +2,6 @@ package router
 
 import (
 	"errors"
-	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"testing"
 	"time"
@@ -133,7 +132,7 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 		assert.NotEqual(t, nil, err, "Error must not be nil")
-		var httpErr response.HTTPError
+		var httpErr HTTPError
 		ok := errors.As(err, &httpErr)
 		assert.True(t, ok, "Error must be an response.HTTPError")
 		assert.Equal(t, http.StatusBadRequest, httpErr.Status, "Error code must be 400")

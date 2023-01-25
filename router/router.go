@@ -62,7 +62,6 @@ package router
 import (
 	"context"
 	"fmt"
-	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -271,7 +270,7 @@ func (l *Router) Handler(
 ) (events.APIGatewayProxyResponse, error) {
 	matchedResource, err := l.matchReq(&req)
 	if err != nil {
-		return response.Error(err)
+		return Error(err)
 	}
 
 	handler := matchedResource.handler
@@ -293,7 +292,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 	// remove trailing slash from req path
 	req.Path = strings.TrimSuffix(req.Path, "/")
 
-	negErr := response.HTTPError{
+	negErr := HTTPError{
 		Status:  http.StatusNotFound,
 		Message: "No such resource",
 	}
@@ -312,7 +311,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		if !ok {
 			// we matched a route, but it didn't support this method. Mark negErr
 			// with a 405 error, but continue, we might match another route
-			negErr = response.HTTPError{
+			negErr = HTTPError{
 				Status:  http.StatusMethodNotAllowed,
 				Message: fmt.Sprintf("%s reqs not supported by this resource", req.HTTPMethod),
 			}
@@ -322,7 +321,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		// process path parameters
 		for i, param := range r.paramNames {
 			if len(matches)-1 < len(r.paramNames) {
-				return matchedResource, response.HTTPError{
+				return matchedResource, HTTPError{
 					Status:  http.StatusInternalServerError,
 					Message: "Failed matching path parameters",
 				}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
-	"github.com/seantcanavan/lambda_jwt_router/response"
 	"github.com/seantcanavan/lambda_jwt_router/router"
 	"log"
 	"net/http"
@@ -25,7 +24,7 @@ func AllowOptionsMW(next router.Handler) router.Handler {
 		err error,
 	) {
 		if req.HTTPMethod == "OPTIONS" { // immediately return success for options calls for CORS reqs
-			return response.Empty()
+			return router.Empty()
 		}
 
 		return next(ctx, req)
@@ -44,13 +43,13 @@ func DecodeAndInjectStandardClaims(next router.Handler) router.Handler {
 	) {
 		mapClaims, httpStatus, err := ExtractJWT(req.Headers)
 		if err != nil {
-			return response.ErrorAndStatus(httpStatus, err)
+			return router.ErrorAndStatus(httpStatus, err)
 		}
 
 		var standardClaims jwt.StandardClaims
 		err = ExtractStandardClaims(mapClaims, &standardClaims)
 		if err != nil {
-			return response.ErrorAndStatus(http.StatusInternalServerError, err)
+			return router.ErrorAndStatus(http.StatusInternalServerError, err)
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, standardClaims.Audience)
@@ -78,13 +77,13 @@ func DecodeAndInjectExpandedClaims(next router.Handler) router.Handler {
 	) {
 		mapClaims, httpStatus, err := ExtractJWT(req.Headers)
 		if err != nil {
-			return response.ErrorAndStatus(httpStatus, err)
+			return router.ErrorAndStatus(httpStatus, err)
 		}
 
 		var extendedClaims ExpandedClaims
 		err = ExtractCustomClaims(mapClaims, &extendedClaims)
 		if err != nil {
-			return response.ErrorAndStatus(http.StatusInternalServerError, err)
+			return router.ErrorAndStatus(http.StatusInternalServerError, err)
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, extendedClaims.Audience)

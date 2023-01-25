@@ -1,4 +1,4 @@
-package response
+package router
 
 import (
 	"encoding/base64"
@@ -12,6 +12,9 @@ import (
 )
 
 const ContentTypeKey = "Content-Type"
+const CORSHeadersKey = "Access-Control-Allow-Headers"
+const CORSMethodsKey = "Access-Control-Allow-Methods"
+const CORSOriginKey = "Access-Control-Allow-Origin"
 
 // ExposeServerErrors is a boolean indicating whether the Error function
 // should expose errors of status code 500 or above to clients. If false, the
@@ -93,8 +96,27 @@ func ErrorAndStatus(httpStatus int, err error) (events.APIGatewayProxyResponse, 
 }
 
 // File generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
-// file bytes encoded to base64, and the http status set to http.StatusOK
+// file bytes added to the response body, and the http status set to http.StatusOK
 func File(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
+	if headers == nil {
+		headers = map[string]string{
+			ContentTypeKey: contentType,
+		}
+	} else {
+		headers[ContentTypeKey] = contentType
+	}
+
+	return events.APIGatewayProxyResponse{
+		StatusCode:      http.StatusOK,
+		Headers:         addCors(headers),
+		Body:            string(fileBytes),
+		IsBase64Encoded: false,
+	}, nil
+}
+
+// FileB64 generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
+// file bytes encoded to base64, and the http status set to http.StatusOK
+func FileB64(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
 	if headers == nil {
 		headers = map[string]string{
 			ContentTypeKey: contentType,
@@ -131,9 +153,9 @@ func addCors(headers map[string]string) map[string]string {
 		corsOrigins = "*"
 	}
 
-	headers["Access-Control-Allow-Headers"] = "*"
-	headers["Access-Control-Allow-Methods"] = corsMethods
-	headers["Access-Control-Allow-Origin"] = corsOrigins
+	headers[CORSHeadersKey] = "*"
+	headers[CORSMethodsKey] = corsMethods
+	headers[CORSOriginKey] = corsOrigins
 
 	return headers
 }
