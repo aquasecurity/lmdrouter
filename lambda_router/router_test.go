@@ -1,4 +1,4 @@
-package router
+package lambda_router
 
 import (
 	"context"

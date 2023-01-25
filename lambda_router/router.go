@@ -57,7 +57,7 @@
 // * Implements net/http.Handler for local development and general usage outside
 //  an AWS Lambda environment.
 //
-package router
+package lambda_router
 
 import (
 	"context"

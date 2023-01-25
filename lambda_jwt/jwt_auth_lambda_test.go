@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
-	"github.com/seantcanavan/lambda_jwt_router/router"
+	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
 	"math/rand"
 	"net/http"
 	"testing"
@@ -76,8 +76,8 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
-		var responseBody router.HTTPError
-		err = router.UnmarshalResponse(res, &responseBody)
+		var responseBody lambda_router.HTTPError
+		err = lambda_router.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
 		assert.Equal(t, responseBody.Status, res.StatusCode)
@@ -106,7 +106,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		assert.Equal(t, res.StatusCode, http.StatusOK)
 
 		var returnedClaims ExpandedClaims
-		err = router.UnmarshalResponse(res, &returnedClaims)
+		err = lambda_router.UnmarshalResponse(res, &returnedClaims)
 		assert.Nil(t, err)
 		// this verifies that the context gets set in the middleware inject function since the
 		// dummy handler passed to it as the 'next' call injects the values from its passed
@@ -135,8 +135,8 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
-		var responseBody router.HTTPError
-		err = router.UnmarshalResponse(res, &responseBody)
+		var responseBody lambda_router.HTTPError
+		err = lambda_router.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
 		assert.Equal(t, responseBody.Status, res.StatusCode)
@@ -165,7 +165,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		assert.Equal(t, res.StatusCode, http.StatusOK)
 
 		var returnedClaims jwt.StandardClaims
-		err = router.UnmarshalResponse(res, &returnedClaims)
+		err = lambda_router.UnmarshalResponse(res, &returnedClaims)
 		assert.Nil(t, err)
 		// this verifies that the context gets set in the middleware inject function since the
 		// dummy handler passed to it as the 'next' call injects the values from its passed
@@ -265,11 +265,11 @@ func TestExtractJWT(t *testing.T) {
 // that takes the values inserted into the context object by DecodeAndInjectExpandedClaims
 // and returns them as an object from the request so that unit tests can analyze the values
 // and make sure they have done the full trip from JWT -> CTX -> unit test
-func GenerateSuccessHandlerAndMapExpandedContext() router.Handler {
+func GenerateSuccessHandlerAndMapExpandedContext() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return router.Custom(http.StatusOK, nil, ExpandedClaims{
+		return lambda_router.Custom(http.StatusOK, nil, ExpandedClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			FirstName: ctx.Value(FirstNameKey).(string),
@@ -289,11 +289,11 @@ func GenerateSuccessHandlerAndMapExpandedContext() router.Handler {
 // that takes the values inserted into the context object by DecodeAndInjectStandardClaims
 // and returns them as an object from the request so that unit tests can analyze the values
 // and make sure they have done the full trip from JWT -> CTX -> unit test
-func GenerateSuccessHandlerAndMapStandardContext() router.Handler {
+func GenerateSuccessHandlerAndMapStandardContext() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return router.Custom(http.StatusOK, nil, jwt.StandardClaims{
+		return lambda_router.Custom(http.StatusOK, nil, jwt.StandardClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			Id:        ctx.Value(IDKey).(string),
@@ -340,19 +340,19 @@ func GenerateAPIGatewayProxyReq() events.APIGatewayProxyRequestContext {
 	}
 }
 
-func GenerateEmptySuccessHandler() router.Handler {
+func GenerateEmptySuccessHandler() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return router.Empty()
+		return lambda_router.Empty()
 	}
 }
 
-func GenerateEmptyErrorHandler() router.Handler {
+func GenerateEmptyErrorHandler() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return router.ErrorAndStatus(http.StatusInternalServerError, errors.New("this error is simulated"))
+		return lambda_router.ErrorAndStatus(http.StatusInternalServerError, errors.New("this error is simulated"))
 	}
 }
 
