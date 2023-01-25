@@ -1,4 +1,4 @@
-package lmdrouter
+package lambda_router
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-// Package lmdrouter is a simple-to-use library for writing AWS Lambda functions in Go
+// Package router is a simple-to-use library for writing AWS Lambda functions in Go
 // that listen to events of type API Gateway Proxy Req (represented by the
 // `events.APIGatewayProxyRequest` type of the github.com/aws-lambda-go/events
 // package).
@@ -52,12 +52,12 @@
 //
 // * Provides the ability to automatically "marshal" responses of any type to an
 // API Gateway response (only JSON responses are currently generated). See the
-// MarshalResponse function for more information.
+// Custom function for more information.
 //
 // * Implements net/http.Handler for local development and general usage outside
-// of an AWS Lambda environment.
+//  an AWS Lambda environment.
 //
-package lmdrouter
+package lambda_router
 
 import (
 	"context"
@@ -145,13 +145,13 @@ type Middleware func(Handler) Handler
 //         var input listSomethingsInput
 //         err = lmdrouter.UnmarshalRequest(req, false, &input)
 //         if err != nil {
-//             return lmdrouter.HandleError(err)
+//             return lmdrouter.Error(err)
 //         }
 //
 //         // call some business logic that generates an output struct
 //         // ...
 //
-//         return lmdrouter.MarshalResponse(http.StatusOK, nil, output)
+//         return lmdrouter.Custom(http.StatusOK, nil, output)
 //    }
 //
 type Handler func(context.Context, events.APIGatewayProxyRequest) (
@@ -217,7 +217,7 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	}
 
 	r.methods["OPTIONS"] = resource{
-		handler: l.GetOptionsHandler(),
+		handler: l.getOptionsHandler(),
 		hasMiddleware: hasMiddleware{
 			middleware: middleware,
 		},
@@ -226,13 +226,13 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	l.routes[path] = r
 }
 
-func (l *Router) GetOptionsHandler() Handler {
+func (l *Router) getOptionsHandler() Handler {
 	return func(context.Context, events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error,
 	) {
 		return events.APIGatewayProxyResponse{
-			StatusCode: 200,
+			StatusCode: http.StatusOK,
 			Body:       "Blanket CORS req",
 		}, nil
 	}
@@ -268,15 +268,15 @@ func (l *Router) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
-	rsrc, err := l.matchReq(&req)
+	matchedResource, err := l.matchReq(&req)
 	if err != nil {
-		return HandleError(err)
+		return Error(err)
 	}
 
-	handler := rsrc.handler
+	handler := matchedResource.handler
 
-	for i := len(rsrc.middleware) - 1; i >= 0; i-- {
-		handler = rsrc.middleware[i](handler)
+	for i := len(matchedResource.middleware) - 1; i >= 0; i-- {
+		handler = matchedResource.middleware[i](handler)
 	}
 	for i := len(l.middleware) - 1; i >= 0; i-- {
 		handler = l.middleware[i](handler)
@@ -286,7 +286,7 @@ func (l *Router) Handler(
 }
 
 func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
-	rsrc resource,
+	matchedResource resource,
 	err error,
 ) {
 	// remove trailing slash from req path
@@ -307,7 +307,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 
 		// do we have this method?
 		var ok bool
-		rsrc, ok = r.methods[req.HTTPMethod]
+		matchedResource, ok = r.methods[req.HTTPMethod]
 		if !ok {
 			// we matched a route, but it didn't support this method. Mark negErr
 			// with a 405 error, but continue, we might match another route
@@ -321,7 +321,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		// process path parameters
 		for i, param := range r.paramNames {
 			if len(matches)-1 < len(r.paramNames) {
-				return rsrc, HTTPError{
+				return matchedResource, HTTPError{
 					Status:  http.StatusInternalServerError,
 					Message: "Failed matching path parameters",
 				}
@@ -334,8 +334,8 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 			req.PathParameters[param], _ = url.QueryUnescape(matches[i+1])
 		}
 
-		return rsrc, nil
+		return matchedResource, nil
 	}
 
-	return rsrc, negErr
+	return matchedResource, negErr
 }

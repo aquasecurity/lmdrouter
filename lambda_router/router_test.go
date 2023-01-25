@@ -1,4 +1,4 @@
-package lmdrouter
+package lambda_router
 
 import (
 	"context"
@@ -119,15 +119,15 @@ func TestRouter(t *testing.T) {
 			assert.Equal(t, http.StatusNotFound, httpErr.Status, "Error code must be 404")
 		})
 
-		t.Run("GET /api/fake-id/stuff/fakey-fake", func(t *testing.T) {
+		t.Run("GET /api/fake-id/stuff/faked-fake", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
 				HTTPMethod: "GET",
-				Path:       "/api/fake-id/stuff/fakey-fake",
+				Path:       "/api/fake-id/stuff/faked-fake",
 			}
 			_, err := lmd.matchReq(&req)
 			assert.Equal(t, nil, err, "Error must be nil")
 			assert.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
-			assert.Equal(t, "fakey-fake", req.PathParameters["fake"], "'fake' must be correct")
+			assert.Equal(t, "faked-fake", req.PathParameters["fake"], "'fake' must be correct")
 		})
 	})
 
@@ -224,7 +224,7 @@ func TestRouter(t *testing.T) {
 	})
 }
 
-func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
+func listSomethings(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -232,7 +232,7 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockListReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
-		return HandleError(err)
+		return Error(err)
 	}
 
 	now := time.Now()
@@ -244,17 +244,17 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 		{ID: "three", Name: "Third Item", Date: then},
 	}
 
-	return MarshalResponse(http.StatusOK, nil, output)
+	return Custom(http.StatusOK, nil, output)
 }
 
-func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
+func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
 	var input mockPostReq
 	err = UnmarshalRequest(req, true, &input)
 	if err != nil {
-		return HandleError(err)
+		return Error(err)
 	}
 
 	output := map[string]string{
@@ -262,12 +262,12 @@ func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 		"url": "https://service.com/api/bla",
 	}
 
-	return MarshalResponse(http.StatusAccepted, map[string]string{
+	return Custom(http.StatusAccepted, map[string]string{
 		"Location": output["url"],
 	}, output)
 }
 
-func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
+func getSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -275,7 +275,7 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockGetReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
-		return HandleError(err)
+		return Error(err)
 	}
 
 	output := mockItem{
@@ -284,10 +284,10 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 		Date: time.Now(),
 	}
 
-	return MarshalResponse(http.StatusOK, nil, output)
+	return Custom(http.StatusOK, nil, output)
 }
 
-func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
+func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -295,7 +295,7 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 	var input mockListReq
 	err = UnmarshalRequest(req, false, &input)
 	if err != nil {
-		return HandleError(err)
+		return Error(err)
 	}
 
 	output := make([]mockItem, len(input.Terms))
@@ -306,7 +306,7 @@ func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
 		}
 	}
 
-	return MarshalResponse(http.StatusOK, nil, output)
+	return Custom(http.StatusOK, nil, output)
 }
 
 func logger(next Handler) Handler {
@@ -358,10 +358,10 @@ func auth(next Handler) Handler {
 			}
 		}
 
-		return MarshalResponse(
+		return Custom(
 			http.StatusUnauthorized,
 			map[string]string{"WWW-Authenticate": "Bearer"},
-			HTTPError{http.StatusUnauthorized, "Unauthorized"},
+			HTTPError{Status: http.StatusUnauthorized, Message: "Unauthorized"},
 		)
 	}
 }
