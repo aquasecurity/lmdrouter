@@ -230,7 +230,7 @@ func listSomethings(_ context.Context, req events.APIGatewayProxyRequest) (
 ) {
 	// parse input
 	var input mockListReq
-	err = UnmarshalRequest(req, false, &input)
+	err = UnmarshalReq(req, false, &input)
 	if err != nil {
 		return Error(err)
 	}
@@ -252,7 +252,7 @@ func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	var input mockPostReq
-	err = UnmarshalRequest(req, true, &input)
+	err = UnmarshalReq(req, true, &input)
 	if err != nil {
 		return Error(err)
 	}
@@ -273,7 +273,7 @@ func getSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 ) {
 	// parse input
 	var input mockGetReq
-	err = UnmarshalRequest(req, false, &input)
+	err = UnmarshalReq(req, false, &input)
 	if err != nil {
 		return Error(err)
 	}
@@ -293,7 +293,7 @@ func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
 ) {
 	// parse input
 	var input mockListReq
-	err = UnmarshalRequest(req, false, &input)
+	err = UnmarshalReq(req, false, &input)
 	if err != nil {
 		return Error(err)
 	}

@@ -47,7 +47,7 @@
 // * Provides ability to automatically "unmarshal" an API Gateway req to an
 // arbitrary Go struct, with data coming either from path and query string
 // parameters, or from the req body (only JSON reqs are currently
-// supported). See the documentation for the `UnmarshalRequest` function for
+// supported). See the documentation for the `UnmarshalReq` function for
 // more information.
 //
 // * Provides the ability to automatically "marshal" responses of any type to an
@@ -143,7 +143,7 @@ type Middleware func(Handler) Handler
 //     ) {
 //         // parse input
 //         var input listSomethingsInput
-//         err = lmdrouter.UnmarshalRequest(req, false, &input)
+//         err = lmdrouter.UnmarshalReq(req, false, &input)
 //         if err != nil {
 //             return lmdrouter.Error(err)
 //         }

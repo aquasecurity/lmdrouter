@@ -25,17 +25,17 @@ func setup() {
 
 func TestExtendExpandedClaims(t *testing.T) {
 	expandedClaims := ExpandedClaims{
-		Audience:  GenerateRandomString(10),
+		Audience:  generateRandomString(10),
 		ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
-		FirstName: GenerateRandomString(10),
-		FullName:  GenerateRandomString(10),
-		ID:        GenerateRandomString(10),
+		FirstName: generateRandomString(10),
+		FullName:  generateRandomString(10),
+		ID:        generateRandomString(10),
 		IssuedAt:  time.Now().Unix(),
-		Issuer:    GenerateRandomString(10),
-		Level:     GenerateRandomString(10),
+		Issuer:    generateRandomString(10),
+		Level:     generateRandomString(10),
 		NotBefore: time.Now().Add(time.Hour * -1).Unix(),
-		Subject:   GenerateRandomString(10),
-		UserType:  GenerateRandomString(10),
+		Subject:   generateRandomString(10),
+		UserType:  generateRandomString(10),
 	}
 
 	extendedClaims := ExtendExpandedClaims(expandedClaims)
@@ -72,13 +72,13 @@ func TestExtendExpandedClaims(t *testing.T) {
 
 func TestExtendStandardClaims(t *testing.T) {
 	standardClaims := jwt.StandardClaims{
-		Audience:  GenerateRandomString(10),
+		Audience:  generateRandomString(10),
 		ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
-		Id:        GenerateRandomString(10),
+		Id:        generateRandomString(10),
 		IssuedAt:  time.Now().Unix(),
-		Issuer:    GenerateRandomString(10),
+		Issuer:    generateRandomString(10),
 		NotBefore: time.Now().Add(time.Hour * -1).Unix(),
-		Subject:   GenerateRandomString(10),
+		Subject:   generateRandomString(10),
 	}
 
 	extendedClaims := ExtendStandardClaims(standardClaims)
@@ -116,7 +116,7 @@ func TestExtractCustomClaims(t *testing.T) {
 			ExpiresAt int64 `json:"exp"`
 		}
 		extractCustomErr := ExtractCustomClaims(jwt.MapClaims{
-			"exp": GenerateRandomString(10), // exp should be an integer
+			"exp": generateRandomString(10), // exp should be an integer
 		}, &badClaims{})
 
 		assert.NotNil(t, extractCustomErr)
@@ -146,7 +146,7 @@ func TestExtractCustomClaims(t *testing.T) {
 func TestExtractStandardClaims(t *testing.T) {
 	t.Run("verify ExtractStandardClaims returns an err when unmarshalling to invalid standard claims object", func(t *testing.T) {
 		extractCustomErr := ExtractStandardClaims(jwt.MapClaims{
-			"exp": GenerateRandomString(10), // exp should be an integer
+			"exp": generateRandomString(10), // exp should be an integer
 		}, &jwt.StandardClaims{})
 
 		assert.NotNil(t, extractCustomErr)
@@ -180,7 +180,7 @@ func TestSign(t *testing.T) {
 
 func TestVerifyJWT(t *testing.T) {
 	t.Run("verify err when parsing invalid jwt", func(t *testing.T) {
-		_, err := VerifyJWT(GenerateRandomString(10))
+		_, err := VerifyJWT(generateRandomString(10))
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, ErrInvalidJWT))
 	})
@@ -199,28 +199,28 @@ func TestVerifyJWT(t *testing.T) {
 
 func generateExpandedMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
-		AudienceKey:  GenerateRandomString(10),
+		AudienceKey:  generateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
-		FirstNameKey: GenerateRandomString(10),
-		FullNameKey:  GenerateRandomString(10),
-		IDKey:        GenerateRandomString(10),
+		FirstNameKey: generateRandomString(10),
+		FullNameKey:  generateRandomString(10),
+		IDKey:        generateRandomString(10),
 		IssuedAtKey:  time.Now().Unix(),
-		IssuerKey:    GenerateRandomString(10),
-		LevelKey:     GenerateRandomString(10),
+		IssuerKey:    generateRandomString(10),
+		LevelKey:     generateRandomString(10),
 		NotBeforeKey: time.Now().Add(time.Hour * -1).Unix(),
-		SubjectKey:   GenerateRandomString(10),
-		UserTypeKey:  GenerateRandomString(10),
+		SubjectKey:   generateRandomString(10),
+		UserTypeKey:  generateRandomString(10),
 	}
 }
 
 func generateStandardMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
-		AudienceKey:  GenerateRandomString(10),
+		AudienceKey:  generateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
-		IDKey:        GenerateRandomString(10),
+		IDKey:        generateRandomString(10),
 		IssuedAtKey:  time.Now().Unix(),
-		IssuerKey:    GenerateRandomString(10),
+		IssuerKey:    generateRandomString(10),
 		NotBeforeKey: time.Now().Add(time.Hour * -1).Unix(),
-		SubjectKey:   GenerateRandomString(10),
+		SubjectKey:   generateRandomString(10),
 	}
 }

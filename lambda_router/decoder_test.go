@@ -2,6 +2,7 @@ package lambda_router
 
 import (
 	"errors"
+	"math/rand"
 	"net/http"
 	"testing"
 	"time"
@@ -63,10 +64,27 @@ type stringAliasExample string
 
 const aliasExample stringAliasExample = "world"
 
+func TestMarshalLambdaRequest(t *testing.T) {
+	mi := mockItem{
+		ID:   generateRandomString(10),
+		Name: generateRandomString(10),
+	}
+
+	t.Run("verify MarshalReq correctly adds the JSON string to the request body", func(t *testing.T) {
+		req := MarshalReq(mi)
+
+		var miParsed mockItem
+		err := UnmarshalReq(req, true, &miParsed)
+		assert.Nil(t, err)
+		assert.Equal(t, mi.ID, miParsed.ID)
+		assert.Equal(t, mi.Name, miParsed.Name)
+	})
+}
+
 func Test_UnmarshalReq(t *testing.T) {
 	t.Run("valid path&query input", func(t *testing.T) {
 		var input mockListReq
-		err := UnmarshalRequest(
+		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
 				PathParameters: map[string]string{
 					"id": "fake-scan-id",
@@ -119,7 +137,7 @@ func Test_UnmarshalReq(t *testing.T) {
 
 	t.Run("invalid path&query input", func(t *testing.T) {
 		var input mockListReq
-		err := UnmarshalRequest(
+		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
 				PathParameters: map[string]string{
 					"id": "fake-scan-id",
@@ -142,7 +160,7 @@ func Test_UnmarshalReq(t *testing.T) {
 
 	t.Run("valid body input, not base64", func(t *testing.T) {
 		var input mockPostReq
-		err := UnmarshalRequest(
+		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: false,
 				PathParameters: map[string]string{
@@ -162,7 +180,7 @@ func Test_UnmarshalReq(t *testing.T) {
 
 	t.Run("invalid body input, not base64", func(t *testing.T) {
 		var input mockPostReq
-		err := UnmarshalRequest(
+		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: false,
 				Body:            `this is not JSON`,
@@ -176,7 +194,7 @@ func Test_UnmarshalReq(t *testing.T) {
 
 	t.Run("valid body input, base64", func(t *testing.T) {
 		var input mockPostReq
-		err := UnmarshalRequest(
+		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: true,
 				Body:            "eyJuYW1lIjoiRmFrZSBQb3N0IiwiZGF0ZSI6IjIwMjAtMDMtMjNUMTE6MzM6MDBaIn0=",
@@ -192,7 +210,7 @@ func Test_UnmarshalReq(t *testing.T) {
 
 	t.Run("invalid body input, base64", func(t *testing.T) {
 		var input mockPostReq
-		err := UnmarshalRequest(
+		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
 				IsBase64Encoded: true,
 				Body:            "dGhpcyBpcyBub3QgSlNPTg==",
@@ -203,4 +221,15 @@ func Test_UnmarshalReq(t *testing.T) {
 
 		assert.NotEqual(t, nil, err, "Error must not be nil")
 	})
+}
+
+func generateRandomString(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	rand.Seed(time.Now().UnixNano())
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(b)
 }

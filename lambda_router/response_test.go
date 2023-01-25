@@ -28,7 +28,7 @@ func TestCustom(t *testing.T) {
 
 	t.Run("verify Custom returns the struct in the response body", func(t *testing.T) {
 		var returnedStruct customStruct
-		err = UnmarshalResponse(res, &returnedStruct)
+		err = UnmarshalRes(res, &returnedStruct)
 		assert.Nil(t, err)
 
 		assert.Equal(t, structValue, returnedStruct)
@@ -183,7 +183,7 @@ func TestSuccess(t *testing.T) {
 	})
 	t.Run("verify Success returns the struct in the response body", func(t *testing.T) {
 		var returnedStruct customStruct
-		unmarshalErr := UnmarshalResponse(res, &returnedStruct)
+		unmarshalErr := UnmarshalRes(res, &returnedStruct)
 		assert.Nil(t, unmarshalErr)
 		assert.Equal(t, cs, returnedStruct)
 	})

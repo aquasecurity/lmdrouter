@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -17,7 +18,20 @@ import (
 
 var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 
-// UnmarshalRequest "fills" out a target Go struct with data from the req.
+// MarshalReq will take an interface input, marshal it to JSON, and add the
+// JSON as a string to the events.APIGatewayProxyRequest body field before returning.
+func MarshalReq(input interface{}) events.APIGatewayProxyRequest {
+	jsonBytes, err := json.Marshal(input)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	return events.APIGatewayProxyRequest{
+		Body: string(jsonBytes),
+	}
+}
+
+// UnmarshalReq "fills" out a target Go struct with data from the req.
 // If body is true, then the req body is assumed to be JSON and simply
 // unmarshalled into the target (taking into account that the req body may
 // be base-64 encoded). After that, or if body is false, the function will
@@ -56,7 +70,7 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 //         Content     string   `json:"content"`
 //     }
 //
-func UnmarshalRequest(req events.APIGatewayProxyRequest, body bool, target interface{}) error {
+func UnmarshalReq(req events.APIGatewayProxyRequest, body bool, target interface{}) error {
 	if body {
 		err := unmarshalBody(req, target)
 		if err != nil {
@@ -67,10 +81,10 @@ func UnmarshalRequest(req events.APIGatewayProxyRequest, body bool, target inter
 	return unmarshalEvent(req, target)
 }
 
-// UnmarshalResponse should generally be used only when testing as normally you return the response
+// UnmarshalRes should generally be used only when testing as normally you return the response
 // directly to the caller and won't need to Unmarshal it. However, if you are testing locally then
 // it will help you extract the response body of a lambda request and marshal it to an object.
-func UnmarshalResponse(res events.APIGatewayProxyResponse, target interface{}) error {
+func UnmarshalRes(res events.APIGatewayProxyResponse, target interface{}) error {
 	rv := reflect.ValueOf(target)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
 		return errors.New("invalid unmarshal target, must be pointer to struct")
