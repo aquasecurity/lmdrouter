@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
-	"github.com/seantcanavan/lambda_jwt_router/util"
+	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
 	"net/http"
 	"testing"
 	"time"
@@ -307,36 +307,36 @@ func generateSuccessHandlerAndMapStandardContext() lambda_router.Handler {
 
 func generateAPIGatewayProxyReq() events.APIGatewayProxyRequestContext {
 	return events.APIGatewayProxyRequestContext{
-		AccountID:     util.GenerateRandomString(10),
-		ResourceID:    util.GenerateRandomString(10),
-		OperationName: util.GenerateRandomString(10),
-		Stage:         util.GenerateRandomString(10),
-		DomainName:    util.GenerateRandomString(10),
-		DomainPrefix:  util.GenerateRandomString(10),
-		RequestID:     util.GenerateRandomString(10),
-		Protocol:      util.GenerateRandomString(10),
+		AccountID:     lambda_util.GenerateRandomString(10),
+		ResourceID:    lambda_util.GenerateRandomString(10),
+		OperationName: lambda_util.GenerateRandomString(10),
+		Stage:         lambda_util.GenerateRandomString(10),
+		DomainName:    lambda_util.GenerateRandomString(10),
+		DomainPrefix:  lambda_util.GenerateRandomString(10),
+		RequestID:     lambda_util.GenerateRandomString(10),
+		Protocol:      lambda_util.GenerateRandomString(10),
 		Identity: events.APIGatewayRequestIdentity{
-			CognitoIdentityPoolID:         util.GenerateRandomString(10),
-			AccountID:                     util.GenerateRandomString(10),
-			CognitoIdentityID:             util.GenerateRandomString(10),
-			Caller:                        util.GenerateRandomString(10),
-			APIKey:                        util.GenerateRandomString(10),
-			APIKeyID:                      util.GenerateRandomString(10),
-			AccessKey:                     util.GenerateRandomString(10),
-			SourceIP:                      util.GenerateRandomString(10),
-			CognitoAuthenticationType:     util.GenerateRandomString(10),
-			CognitoAuthenticationProvider: util.GenerateRandomString(10),
-			UserArn:                       util.GenerateRandomString(10),
-			UserAgent:                     util.GenerateRandomString(10),
-			User:                          util.GenerateRandomString(10),
+			CognitoIdentityPoolID:         lambda_util.GenerateRandomString(10),
+			AccountID:                     lambda_util.GenerateRandomString(10),
+			CognitoIdentityID:             lambda_util.GenerateRandomString(10),
+			Caller:                        lambda_util.GenerateRandomString(10),
+			APIKey:                        lambda_util.GenerateRandomString(10),
+			APIKeyID:                      lambda_util.GenerateRandomString(10),
+			AccessKey:                     lambda_util.GenerateRandomString(10),
+			SourceIP:                      lambda_util.GenerateRandomString(10),
+			CognitoAuthenticationType:     lambda_util.GenerateRandomString(10),
+			CognitoAuthenticationProvider: lambda_util.GenerateRandomString(10),
+			UserArn:                       lambda_util.GenerateRandomString(10),
+			UserAgent:                     lambda_util.GenerateRandomString(10),
+			User:                          lambda_util.GenerateRandomString(10),
 		},
-		ResourcePath:     util.GenerateRandomString(10),
-		Path:             util.GenerateRandomString(10),
+		ResourcePath:     lambda_util.GenerateRandomString(10),
+		Path:             lambda_util.GenerateRandomString(10),
 		Authorizer:       map[string]interface{}{"hi there": "sean"},
-		HTTPMethod:       util.GenerateRandomString(10),
-		RequestTime:      util.GenerateRandomString(10),
+		HTTPMethod:       lambda_util.GenerateRandomString(10),
+		RequestTime:      lambda_util.GenerateRandomString(10),
 		RequestTimeEpoch: 0,
-		APIID:            util.GenerateRandomString(10),
+		APIID:            lambda_util.GenerateRandomString(10),
 	}
 }
 

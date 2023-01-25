@@ -2,7 +2,7 @@ package lambda_router
 
 import (
 	"errors"
-	"github.com/seantcanavan/lambda_jwt_router/util"
+	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
 	"net/http"
 	"testing"
 	"time"
@@ -66,8 +66,8 @@ const aliasExample stringAliasExample = "world"
 
 func TestMarshalLambdaRequest(t *testing.T) {
 	mi := mockItem{
-		ID:   util.GenerateRandomString(10),
-		Name: util.GenerateRandomString(10),
+		ID:   lambda_util.GenerateRandomString(10),
+		Name: lambda_util.GenerateRandomString(10),
 	}
 
 	t.Run("verify MarshalReq correctly adds the JSON string to the request body", func(t *testing.T) {

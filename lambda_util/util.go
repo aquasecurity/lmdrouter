@@ -1,4 +1,4 @@
-package util
+package lambda_util
 
 import (
 	"encoding/json"
