@@ -1,3 +1,14 @@
+// Package lambda_jwt appends critical libraries necessary for using JWTs (Json Web Tokens)
+// within AWS Lambda through API Gateway proxy requests / integration. It adds multiple
+// middleware functions for checking and validating permissions based on user type and
+// has multiple examples of appending information from the caller's JWT directly into
+// the golang context object so other handler functions can utilize the information.
+// If you wish to use the standard 7 JWT values as defined by Auth0 at
+// https://auth0.com/docs/secure/tokens/json-web-tokens/json-web-token-claims
+// then you want to use the jwt.StandardClaims object. If you wish to use an
+// expanded claim set with a few additional helpful values like email and usertype
+// then check out the ExpandedClaims object. If you wish to provide your own
+// totally custom claim values and object then check out ExtractCustomClaims.
 package lambda_jwt
 
 import (
