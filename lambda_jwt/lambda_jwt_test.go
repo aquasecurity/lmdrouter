@@ -27,6 +27,7 @@ func setup() {
 func TestExtendExpandedClaims(t *testing.T) {
 	expandedClaims := ExpandedClaims{
 		Audience:  lambda_util.GenerateRandomString(10),
+		Email:     lambda_util.GenerateRandomString(10),
 		ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
 		FirstName: lambda_util.GenerateRandomString(10),
 		FullName:  lambda_util.GenerateRandomString(10),
@@ -132,6 +133,7 @@ func TestExtractCustomClaims(t *testing.T) {
 
 		assert.Equal(t, customClaims[AudienceKey], expandedClaims.Audience)
 		assert.Equal(t, customClaims[ExpiresAtKey], expandedClaims.ExpiresAt)
+		assert.Equal(t, customClaims[EmailKey], expandedClaims.Email)
 		assert.Equal(t, customClaims[FirstNameKey], expandedClaims.FirstName)
 		assert.Equal(t, customClaims[FullNameKey], expandedClaims.FullName)
 		assert.Equal(t, customClaims[IDKey], expandedClaims.ID)
@@ -201,6 +203,7 @@ func TestVerifyJWT(t *testing.T) {
 func generateExpandedMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
 		AudienceKey:  lambda_util.GenerateRandomString(10),
+		EmailKey:     lambda_util.GenerateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
 		FirstNameKey: lambda_util.GenerateRandomString(10),
 		FullNameKey:  lambda_util.GenerateRandomString(10),

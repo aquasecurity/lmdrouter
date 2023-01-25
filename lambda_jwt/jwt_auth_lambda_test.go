@@ -114,6 +114,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		// however it does allow me to fully unit test it to make sure the context setting is working.
 		// It's hacky and I'm not proud of it but I'm not sure how else to do it.
 		assert.Equal(t, expandedClaims[AudienceKey], returnedClaims.Audience)
+		assert.Equal(t, expandedClaims[EmailKey], returnedClaims.Email)
 		assert.Equal(t, expandedClaims[ExpiresAtKey], returnedClaims.ExpiresAt)
 		assert.Equal(t, expandedClaims[FirstNameKey], returnedClaims.FirstName)
 		assert.Equal(t, expandedClaims[FullNameKey], returnedClaims.FullName)
@@ -271,6 +272,7 @@ func generateSuccessHandlerAndMapExpandedContext() lambda_router.Handler {
 		error) {
 		return lambda_router.CustomRes(http.StatusOK, nil, ExpandedClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
+			Email:     ctx.Value(EmailKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			FirstName: ctx.Value(FirstNameKey).(string),
 			FullName:  ctx.Value(FullNameKey).(string),

@@ -87,6 +87,7 @@ func DecodeExpanded(next lambda_router.Handler) lambda_router.Handler {
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, extendedClaims.Audience)
+		ctx = context.WithValue(ctx, EmailKey, extendedClaims.Email)
 		ctx = context.WithValue(ctx, ExpiresAtKey, extendedClaims.ExpiresAt)
 		ctx = context.WithValue(ctx, FirstNameKey, extendedClaims.FirstName)
 		ctx = context.WithValue(ctx, FullNameKey, extendedClaims.FullName)

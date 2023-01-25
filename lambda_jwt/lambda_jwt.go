@@ -23,6 +23,7 @@ import (
 // Use these const values to populate your own custom claim values
 const (
 	AudienceKey  = "aud"
+	EmailKey     = "email"
 	ExpiresAtKey = "exp"
 	FirstNameKey = "firstName"
 	FullNameKey  = "fullName"
@@ -44,6 +45,7 @@ var ErrUnsupportedSigningMethod = errors.New("lambda_jwt_router:the provided sig
 
 type ExpandedClaims struct {
 	Audience  string `json:"aud"`
+	Email     string `json:"email"`
 	ExpiresAt int64  `json:"exp"`
 	FirstName string `json:"firstName"`
 	FullName  string `json:"fullName"`
@@ -64,6 +66,7 @@ type ExpandedClaims struct {
 func ExtendExpanded(claims ExpandedClaims) jwt.MapClaims {
 	return jwt.MapClaims{
 		AudienceKey:  claims.Audience,
+		EmailKey:     claims.Email,
 		ExpiresAtKey: claims.ExpiresAt,
 		FirstNameKey: claims.FirstName,
 		FullNameKey:  claims.FullName,
