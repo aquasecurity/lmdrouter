@@ -69,9 +69,9 @@ func TestAllowOptionsMW(t *testing.T) {
 }
 
 func TestDecodeAndInjectExpandedClaims(t *testing.T) {
-	t.Run("verify error is returned by DecodeAndInjectExpandedClaims when missing Authorization header", func(t *testing.T) {
+	t.Run("verify error is returned by DecodeExpanded when missing Authorization header", func(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
-		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(generateEmptyErrorHandler())
+		jwtMiddlewareHandler := DecodeExpanded(generateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
@@ -83,7 +83,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		assert.Equal(t, responseBody.Status, res.StatusCode)
 		assert.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
 	})
-	t.Run("verify context is returned by DecodeAndInjectExpandedClaims with a signed JWT", func(t *testing.T) {
+	t.Run("verify context is returned by DecodeExpanded with a signed JWT", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
@@ -100,7 +100,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 			RequestContext: generateAPIGatewayProxyReq(),
 		}
 
-		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(generateSuccessHandlerAndMapExpandedContext())
+		jwtMiddlewareHandler := DecodeExpanded(generateSuccessHandlerAndMapExpandedContext())
 		res, err := jwtMiddlewareHandler(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusOK)
@@ -128,9 +128,9 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 }
 
 func TestDecodeAndInjectStandardClaims(t *testing.T) {
-	t.Run("verify error is returned by DecodeAndInjectStandardClaims when missing Authorization header", func(t *testing.T) {
+	t.Run("verify error is returned by DecodeStandard when missing Authorization header", func(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
-		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(generateEmptyErrorHandler())
+		jwtMiddlewareHandler := DecodeStandard(generateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
@@ -142,7 +142,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		assert.Equal(t, responseBody.Status, res.StatusCode)
 		assert.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
 	})
-	t.Run("verify context is returned by DecodeAndInjectStandardClaims with a signed JWT", func(t *testing.T) {
+	t.Run("verify context is returned by DecodeStandard with a signed JWT", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
@@ -159,7 +159,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 			RequestContext: generateAPIGatewayProxyReq(),
 		}
 
-		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(generateSuccessHandlerAndMapStandardContext())
+		jwtMiddlewareHandler := DecodeStandard(generateSuccessHandlerAndMapStandardContext())
 		res, err := jwtMiddlewareHandler(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusOK)
@@ -262,14 +262,14 @@ func TestExtractJWT(t *testing.T) {
 }
 
 // generateSuccessHandlerAndMapExpandedContext returns a middleware handler
-// that takes the values inserted into the context object by DecodeAndInjectExpandedClaims
+// that takes the values inserted into the context object by DecodeExpanded
 // and returns them as an object from the request so that unit tests can analyze the values
 // and make sure they have done the full trip from JWT -> CTX -> unit test
 func generateSuccessHandlerAndMapExpandedContext() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return lambda_router.Custom(http.StatusOK, nil, ExpandedClaims{
+		return lambda_router.CustomRes(http.StatusOK, nil, ExpandedClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			FirstName: ctx.Value(FirstNameKey).(string),
@@ -286,14 +286,14 @@ func generateSuccessHandlerAndMapExpandedContext() lambda_router.Handler {
 }
 
 // generateSuccessHandlerAndMapStandardContext returns a middleware handler
-// that takes the values inserted into the context object by DecodeAndInjectStandardClaims
+// that takes the values inserted into the context object by DecodeStandard
 // and returns them as an object from the request so that unit tests can analyze the values
 // and make sure they have done the full trip from JWT -> CTX -> unit test
 func generateSuccessHandlerAndMapStandardContext() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return lambda_router.Custom(http.StatusOK, nil, jwt.StandardClaims{
+		return lambda_router.CustomRes(http.StatusOK, nil, jwt.StandardClaims{
 			Audience:  ctx.Value(AudienceKey).(string),
 			ExpiresAt: ctx.Value(ExpiresAtKey).(int64),
 			Id:        ctx.Value(IDKey).(string),
@@ -344,7 +344,7 @@ func generateEmptySuccessHandler() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return lambda_router.Empty()
+		return lambda_router.EmptyRes()
 	}
 }
 
@@ -352,7 +352,7 @@ func generateEmptyErrorHandler() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return lambda_router.ErrorAndStatus(http.StatusInternalServerError, errors.New("this error is simulated"))
+		return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, errors.New("this error is simulated"))
 	}
 }
 

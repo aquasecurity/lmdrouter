@@ -24,32 +24,32 @@ func AllowOptionsMW(next lambda_router.Handler) lambda_router.Handler {
 		err error,
 	) {
 		if req.HTTPMethod == "OPTIONS" { // immediately return success for options calls for CORS reqs
-			return lambda_router.Empty()
+			return lambda_router.EmptyRes()
 		}
 
 		return next(ctx, req)
 	}
 }
 
-// DecodeAndInjectStandardClaims attempts to parse a Json Web Token from the request's "Authorization"
+// DecodeStandard attempts to parse a Json Web Token from the request's "Authorization"
 // header. If the Authorization header is missing, or does not contain a valid Json Web Token
 // (JWT) then an error message and appropriate HTTP status code will be returned. If the JWT
 // is correctly set and contains a StandardClaim then the values from that standard claim
 // will be added to the context object for others to use during their processing.
-func DecodeAndInjectStandardClaims(next lambda_router.Handler) lambda_router.Handler {
+func DecodeStandard(next lambda_router.Handler) lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		res events.APIGatewayProxyResponse,
 		err error,
 	) {
 		mapClaims, httpStatus, err := ExtractJWT(req.Headers)
 		if err != nil {
-			return lambda_router.ErrorAndStatus(httpStatus, err)
+			return lambda_router.ErrorAndStatusRes(httpStatus, err)
 		}
 
 		var standardClaims jwt.StandardClaims
-		err = ExtractStandardClaims(mapClaims, &standardClaims)
+		err = ExtractStandard(mapClaims, &standardClaims)
 		if err != nil {
-			return lambda_router.ErrorAndStatus(http.StatusInternalServerError, err)
+			return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, err)
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, standardClaims.Audience)
@@ -65,25 +65,25 @@ func DecodeAndInjectStandardClaims(next lambda_router.Handler) lambda_router.Han
 	}
 }
 
-// DecodeAndInjectExpandedClaims attempts to parse a Json Web Token from the request's "Authorization"
+// DecodeExpanded attempts to parse a Json Web Token from the request's "Authorization"
 // header. If the Authorization header is missing, or does not contain a valid Json Web Token
 // (JWT) then an error message and appropriate HTTP status code will be returned. If the JWT
 // is correctly set and contains an instance of ExpandedClaims then the values from
 // that standard claim will be added to the context object for others to use during their processing.
-func DecodeAndInjectExpandedClaims(next lambda_router.Handler) lambda_router.Handler {
+func DecodeExpanded(next lambda_router.Handler) lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		res events.APIGatewayProxyResponse,
 		err error,
 	) {
 		mapClaims, httpStatus, err := ExtractJWT(req.Headers)
 		if err != nil {
-			return lambda_router.ErrorAndStatus(httpStatus, err)
+			return lambda_router.ErrorAndStatusRes(httpStatus, err)
 		}
 
 		var extendedClaims ExpandedClaims
-		err = ExtractCustomClaims(mapClaims, &extendedClaims)
+		err = ExtractCustom(mapClaims, &extendedClaims)
 		if err != nil {
-			return lambda_router.ErrorAndStatus(http.StatusInternalServerError, err)
+			return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, err)
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, extendedClaims.Audience)

@@ -1,4 +1,4 @@
-// Package router is a simple-to-use library for writing AWS Lambda functions in Go
+// Package lambda_router is a simple-to-use library for writing AWS Lambda functions in Go
 // that listen to events of type API Gateway Proxy Req (represented by the
 // `events.APIGatewayProxyRequest` type of the github.com/aws-lambda-go/events
 // package).
@@ -52,7 +52,7 @@
 //
 // * Provides the ability to automatically "marshal" responses of any type to an
 // API Gateway response (only JSON responses are currently generated). See the
-// Custom function for more information.
+// CustomRes function for more information.
 //
 // * Implements net/http.Handler for local development and general usage outside
 //  an AWS Lambda environment.
@@ -115,7 +115,7 @@ type resource struct {
 //             if err != nil {
 //                 level = "ERR"
 //                 code = http.StatusInternalServerError
-//                 extra = " " + err.Error()
+//                 extra = " " + err.ErrorRes()
 //             } else {
 //                 code = res.StatusCode
 //                 if code >= 400 {
@@ -145,13 +145,13 @@ type Middleware func(Handler) Handler
 //         var input listSomethingsInput
 //         err = lmdrouter.UnmarshalReq(req, false, &input)
 //         if err != nil {
-//             return lmdrouter.Error(err)
+//             return lmdrouter.ErrorRes(err)
 //         }
 //
 //         // call some business logic that generates an output struct
 //         // ...
 //
-//         return lmdrouter.Custom(http.StatusOK, nil, output)
+//         return lmdrouter.CustomRes(http.StatusOK, nil, output)
 //    }
 //
 type Handler func(context.Context, events.APIGatewayProxyRequest) (
@@ -270,7 +270,7 @@ func (l *Router) Handler(
 ) (events.APIGatewayProxyResponse, error) {
 	matchedResource, err := l.matchReq(&req)
 	if err != nil {
-		return Error(err)
+		return ErrorRes(err)
 	}
 
 	handler := matchedResource.handler

@@ -114,7 +114,7 @@ func Test_UnmarshalReq(t *testing.T) {
 			false,
 			&input,
 		)
-		assert.Equal(t, nil, err, "Error must be nil")
+		assert.Equal(t, nil, err, "ErrorRes must be nil")
 		assert.Equal(t, "fake-scan-id", input.ID, "ID must be parsed from path")
 		assert.Equal(t, int64(2), input.Page, "Page must be parsed from query")
 		assert.Equal(t, int64(30), input.PageSize, "PageSize must be parsed from query")
@@ -149,11 +149,11 @@ func Test_UnmarshalReq(t *testing.T) {
 			false,
 			&input,
 		)
-		assert.NotEqual(t, nil, err, "Error must not be nil")
+		assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
 		var httpErr HTTPError
 		ok := errors.As(err, &httpErr)
-		assert.True(t, ok, "Error must be an response.HTTPError")
-		assert.Equal(t, http.StatusBadRequest, httpErr.Status, "Error code must be 400")
+		assert.True(t, ok, "ErrorRes must be an response.HTTPError")
+		assert.Equal(t, http.StatusBadRequest, httpErr.Status, "ErrorRes code must be 400")
 	})
 
 	fakeDate := time.Date(2020, 3, 23, 11, 33, 0, 0, time.UTC)
@@ -172,7 +172,7 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 
-		assert.Equal(t, nil, err, "Error must be nil")
+		assert.Equal(t, nil, err, "ErrorRes must be nil")
 		assert.Equal(t, "bla", input.ID, "ID must be parsed from path parameters")
 		assert.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
 		assert.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
@@ -189,7 +189,7 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 
-		assert.NotEqual(t, nil, err, "Error must not be nil")
+		assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
 	})
 
 	t.Run("valid body input, base64", func(t *testing.T) {
@@ -203,7 +203,7 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 
-		assert.Equal(t, nil, err, "Error must be nil")
+		assert.Equal(t, nil, err, "ErrorRes must be nil")
 		assert.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
 		assert.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
 	})
@@ -219,7 +219,7 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 
-		assert.NotEqual(t, nil, err, "Error must not be nil")
+		assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
 	})
 }
 

@@ -38,7 +38,7 @@ func TestExtendExpandedClaims(t *testing.T) {
 		UserType:  generateRandomString(10),
 	}
 
-	extendedClaims := ExtendExpandedClaims(expandedClaims)
+	extendedClaims := ExtendExpanded(expandedClaims)
 
 	extendedClaims["hi"] = "sean"
 	extendedClaims["hello"] = "there"
@@ -81,7 +81,7 @@ func TestExtendStandardClaims(t *testing.T) {
 		Subject:   generateRandomString(10),
 	}
 
-	extendedClaims := ExtendStandardClaims(standardClaims)
+	extendedClaims := ExtendStandard(standardClaims)
 
 	extendedClaims["hi"] = "sean"
 	extendedClaims["hello"] = "there"
@@ -111,22 +111,22 @@ func TestExtendStandardClaims(t *testing.T) {
 }
 
 func TestExtractCustomClaims(t *testing.T) {
-	t.Run("verify ExtractCustomClaims returns an err when unmarshalling to invalid custom claims object", func(t *testing.T) {
+	t.Run("verify ExtractCustom returns an err when unmarshalling to invalid custom claims object", func(t *testing.T) {
 		type badClaims struct {
 			ExpiresAt int64 `json:"exp"`
 		}
-		extractCustomErr := ExtractCustomClaims(jwt.MapClaims{
+		extractCustomErr := ExtractCustom(jwt.MapClaims{
 			"exp": generateRandomString(10), // exp should be an integer
 		}, &badClaims{})
 
 		assert.NotNil(t, extractCustomErr)
 		assert.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
 	})
-	t.Run("verify ExtractCustomClaims works when called with the correct parameters", func(t *testing.T) {
+	t.Run("verify ExtractCustom works when called with the correct parameters", func(t *testing.T) {
 		customClaims := generateExpandedMapClaims()
 
 		var expandedClaims ExpandedClaims
-		err := ExtractCustomClaims(customClaims, &expandedClaims)
+		err := ExtractCustom(customClaims, &expandedClaims)
 		assert.Nil(t, err)
 
 		assert.Equal(t, customClaims[AudienceKey], expandedClaims.Audience)
@@ -144,19 +144,19 @@ func TestExtractCustomClaims(t *testing.T) {
 }
 
 func TestExtractStandardClaims(t *testing.T) {
-	t.Run("verify ExtractStandardClaims returns an err when unmarshalling to invalid standard claims object", func(t *testing.T) {
-		extractCustomErr := ExtractStandardClaims(jwt.MapClaims{
+	t.Run("verify ExtractStandard returns an err when unmarshalling to invalid standard claims object", func(t *testing.T) {
+		extractCustomErr := ExtractStandard(jwt.MapClaims{
 			"exp": generateRandomString(10), // exp should be an integer
 		}, &jwt.StandardClaims{})
 
 		assert.NotNil(t, extractCustomErr)
 		assert.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
 	})
-	t.Run("verify ExtractCustomClaims works when called with the correct parameters", func(t *testing.T) {
+	t.Run("verify ExtractCustom works when called with the correct parameters", func(t *testing.T) {
 		customClaims := generateExpandedMapClaims()
 
 		var standardClaims jwt.StandardClaims
-		err := ExtractCustomClaims(customClaims, &standardClaims)
+		err := ExtractCustom(customClaims, &standardClaims)
 		assert.Nil(t, err)
 
 		assert.Equal(t, customClaims[AudienceKey], standardClaims.Audience)

@@ -29,7 +29,7 @@ func TestHTTPHandler(t *testing.T) {
 			nil,
 		)
 
-		assert.Equal(t, nil, err, "Error must not be nil")
+		assert.Equal(t, nil, err, "ErrorRes must not be nil")
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
 		assert.True(t, len(testLog) > 0, "Log must have items")
 	})
@@ -47,13 +47,13 @@ func TestHTTPHandler(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer fake-token")
 
 		res, err := http.DefaultClient.Do(req)
-		assert.Equal(t, nil, err, "Error must not be nil")
+		assert.Equal(t, nil, err, "ErrorRes must not be nil")
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
 	})
 
 	t.Run("GET /api", func(t *testing.T) {
 		res, err := http.Get(ts.URL + "/api")
-		assert.Equal(t, nil, err, "Error must not be nil")
+		assert.Equal(t, nil, err, "ErrorRes must not be nil")
 		assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
 		assert.True(t, len(testLog) > 0, "Log must have items")
 	})

@@ -70,7 +70,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "Error must be nil")
+			assert.Equal(t, nil, err, "ErrorRes must be nil")
 		})
 
 		t.Run("POST /api/", func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "Error must be nil")
+			assert.Equal(t, nil, err, "ErrorRes must be nil")
 		})
 
 		t.Run("DELETE /api", func(t *testing.T) {
@@ -89,11 +89,11 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.NotEqual(t, nil, err, "Error must not be nil")
+			assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
-			assert.True(t, ok, "Error must be an HTTP error")
-			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "Error code must be 405")
+			assert.True(t, ok, "ErrorRes must be an HTTP error")
+			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "ErrorRes code must be 405")
 		})
 
 		t.Run("GET /api/fake-id", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/fake-id",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "Error must be nil")
+			assert.Equal(t, nil, err, "ErrorRes must be nil")
 			assert.Equal(t, "fake-id", req.PathParameters["id"], "ID must be correct")
 		})
 
@@ -112,11 +112,11 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/fake-id/bla",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.NotEqual(t, nil, err, "Error must not be nil")
+			assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
-			assert.True(t, ok, "Error must be an HTTP error")
-			assert.Equal(t, http.StatusNotFound, httpErr.Status, "Error code must be 404")
+			assert.True(t, ok, "ErrorRes must be an HTTP error")
+			assert.Equal(t, http.StatusNotFound, httpErr.Status, "ErrorRes code must be 404")
 		})
 
 		t.Run("GET /api/fake-id/stuff/faked-fake", func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/fake-id/stuff/faked-fake",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "Error must be nil")
+			assert.Equal(t, nil, err, "ErrorRes must be nil")
 			assert.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
 			assert.Equal(t, "faked-fake", req.PathParameters["fake"], "'fake' must be correct")
 		})
@@ -138,7 +138,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			res, err := lmd.Handler(context.Background(), req)
-			assert.Equal(t, nil, err, "Error must not be nil")
+			assert.Equal(t, nil, err, "ErrorRes must not be nil")
 			assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
 			assert.True(t, len(testLog) > 0, "Log must have items")
 			assert.Equal(
@@ -158,7 +158,7 @@ func TestRouter(t *testing.T) {
 				},
 			}
 			res, err := lmd.Handler(context.Background(), req)
-			assert.Equal(t, nil, err, "Error must not be nil")
+			assert.Equal(t, nil, err, "ErrorRes must not be nil")
 			assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
 		})
 
@@ -168,7 +168,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			res, err := lmd.Handler(context.Background(), req)
-			assert.Equal(t, nil, err, "Error must not be nil")
+			assert.Equal(t, nil, err, "ErrorRes must not be nil")
 			assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
 			assert.True(t, len(testLog) > 0, "Log must have items")
 			assert.Equal(
@@ -232,7 +232,7 @@ func listSomethings(_ context.Context, req events.APIGatewayProxyRequest) (
 	var input mockListReq
 	err = UnmarshalReq(req, false, &input)
 	if err != nil {
-		return Error(err)
+		return ErrorRes(err)
 	}
 
 	now := time.Now()
@@ -244,7 +244,7 @@ func listSomethings(_ context.Context, req events.APIGatewayProxyRequest) (
 		{ID: "three", Name: "Third Item", Date: then},
 	}
 
-	return Custom(http.StatusOK, nil, output)
+	return CustomRes(http.StatusOK, nil, output)
 }
 
 func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
@@ -254,7 +254,7 @@ func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	var input mockPostReq
 	err = UnmarshalReq(req, true, &input)
 	if err != nil {
-		return Error(err)
+		return ErrorRes(err)
 	}
 
 	output := map[string]string{
@@ -262,7 +262,7 @@ func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 		"url": "https://service.com/api/bla",
 	}
 
-	return Custom(http.StatusAccepted, map[string]string{
+	return CustomRes(http.StatusAccepted, map[string]string{
 		"Location": output["url"],
 	}, output)
 }
@@ -275,7 +275,7 @@ func getSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	var input mockGetReq
 	err = UnmarshalReq(req, false, &input)
 	if err != nil {
-		return Error(err)
+		return ErrorRes(err)
 	}
 
 	output := mockItem{
@@ -284,7 +284,7 @@ func getSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 		Date: time.Now(),
 	}
 
-	return Custom(http.StatusOK, nil, output)
+	return CustomRes(http.StatusOK, nil, output)
 }
 
 func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
@@ -295,7 +295,7 @@ func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
 	var input mockListReq
 	err = UnmarshalReq(req, false, &input)
 	if err != nil {
-		return Error(err)
+		return ErrorRes(err)
 	}
 
 	output := make([]mockItem, len(input.Terms))
@@ -306,7 +306,7 @@ func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
 		}
 	}
 
-	return Custom(http.StatusOK, nil, output)
+	return CustomRes(http.StatusOK, nil, output)
 }
 
 func logger(next Handler) Handler {
@@ -358,7 +358,7 @@ func auth(next Handler) Handler {
 			}
 		}
 
-		return Custom(
+		return CustomRes(
 			http.StatusUnauthorized,
 			map[string]string{"WWW-Authenticate": "Bearer"},
 			HTTPError{Status: http.StatusUnauthorized, Message: "Unauthorized"},

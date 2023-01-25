@@ -16,17 +16,17 @@ const CORSHeadersKey = "Access-Control-Allow-Headers"
 const CORSMethodsKey = "Access-Control-Allow-Methods"
 const CORSOriginKey = "Access-Control-Allow-Origin"
 
-// ExposeServerErrors is a boolean indicating whether the Error function
+// ExposeServerErrors is a boolean indicating whether the ErrorRes function
 // should expose errors of status code 500 or above to clients. If false, the
 // name of the status code is used as the error message instead.
 var ExposeServerErrors = true
 
-// Custom generated an events.APIGatewayProxyResponse object that can
+// CustomRes generated an events.APIGatewayProxyResponse object that can
 // be directly returned via the lambda's handler function. It receives an HTTP
 // status code for the response, a map of HTTP headers (can be empty or nil),
 // and a value (probably a struct) representing the response body. This value
 // will be marshaled to JSON (currently without base 64 encoding).
-func Custom(httpStatus int, headers map[string]string, data interface{}) (
+func CustomRes(httpStatus int, headers map[string]string, data interface{}) (
 	events.APIGatewayProxyResponse,
 	error,
 ) {
@@ -50,12 +50,12 @@ func Custom(httpStatus int, headers map[string]string, data interface{}) (
 	}, nil
 }
 
-// Empty returns a simple empty events.APIGatewayProxyResponse with http.StatusOK
-func Empty() (events.APIGatewayProxyResponse, error) {
-	return Custom(http.StatusOK, nil, struct{}{})
+// EmptyRes returns a simple empty events.APIGatewayProxyResponse with http.StatusOK
+func EmptyRes() (events.APIGatewayProxyResponse, error) {
+	return CustomRes(http.StatusOK, nil, struct{}{})
 }
 
-// Error generates an events.APIGatewayProxyResponse from an error value.
+// ErrorRes generates an events.APIGatewayProxyResponse from an error value.
 // If the error is an HTTPError, the response's status code will be taken from
 // the error. Otherwise, the error is assumed to be 500 Internal Server Error.
 // Regardless, all errors will generate a JSON response in the format
@@ -63,7 +63,7 @@ func Empty() (events.APIGatewayProxyResponse, error) {
 // This format cannot currently be changed. If you do not wish to expose server
 // errors (i.e. errors whose status code is 500 or above), set the
 // ExposeServerErrors global variable to false.
-func Error(err error) (events.APIGatewayProxyResponse, error) {
+func ErrorRes(err error) (events.APIGatewayProxyResponse, error) {
 	var httpErr HTTPError
 	if !errors.As(err, &httpErr) {
 		httpErr = HTTPError{
@@ -76,12 +76,12 @@ func Error(err error) (events.APIGatewayProxyResponse, error) {
 		httpErr.Message = http.StatusText(httpErr.Status)
 	}
 
-	return Custom(httpErr.Status, nil, httpErr)
+	return CustomRes(httpErr.Status, nil, httpErr)
 }
 
-// ErrorAndStatus generates a custom error return response with the given http status code and error.
+// ErrorAndStatusRes generates a custom error return response with the given http status code and error.
 // Setting ExposeServerErrors to false will prevent leaking data to clients.
-func ErrorAndStatus(httpStatus int, err error) (events.APIGatewayProxyResponse, error) {
+func ErrorAndStatusRes(httpStatus int, err error) (events.APIGatewayProxyResponse, error) {
 	httpErr := HTTPError{
 		Status:  httpStatus,
 		Message: err.Error(),
@@ -92,12 +92,12 @@ func ErrorAndStatus(httpStatus int, err error) (events.APIGatewayProxyResponse, 
 		httpErr.Message = http.StatusText(httpErr.Status)
 	}
 
-	return Custom(httpErr.Status, nil, httpErr)
+	return CustomRes(httpErr.Status, nil, httpErr)
 }
 
-// File generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
+// FileRes generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
 // file bytes added to the response body, and the http status set to http.StatusOK
-func File(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
+func FileRes(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
 	if headers == nil {
 		headers = map[string]string{
 			ContentTypeKey: contentType,
@@ -114,9 +114,9 @@ func File(contentType string, headers map[string]string, fileBytes []byte) (even
 	}, nil
 }
 
-// FileB64 generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
+// FileB64Res generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
 // file bytes encoded to base64, and the http status set to http.StatusOK
-func FileB64(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
+func FileB64Res(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
 	if headers == nil {
 		headers = map[string]string{
 			ContentTypeKey: contentType,
@@ -133,11 +133,11 @@ func FileB64(contentType string, headers map[string]string, fileBytes []byte) (e
 	}, nil
 }
 
-// Success wraps Custom assuming a http.StatusOK status code and no
+// SuccessRes wraps CustomRes assuming a http.StatusOK status code and no
 // custom headers to return. This was such a common use case I felt it
 // necessary to create a wrapper to make everyone's life easier.
-func Success(data interface{}) (events.APIGatewayProxyResponse, error) {
-	return Custom(http.StatusOK, nil, data)
+func SuccessRes(data interface{}) (events.APIGatewayProxyResponse, error) {
+	return CustomRes(http.StatusOK, nil, data)
 }
 
 // addCors injects CORS Origin and CORS Methods headers into the response object before it's returned.

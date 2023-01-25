@@ -8,7 +8,7 @@
 // then you want to use the jwt.StandardClaims object. If you wish to use an
 // expanded claim set with a few additional helpful values like email and usertype
 // then check out the ExpandedClaims object. If you wish to provide your own
-// totally custom claim values and object then check out ExtractCustomClaims.
+// totally custom claim values and object then check out ExtractCustom.
 package lambda_jwt
 
 import (
@@ -56,9 +56,12 @@ type ExpandedClaims struct {
 	UserType  string `json:"userType"`
 }
 
-// ExtendExpandedClaims returns an instance of jwt.MapClaims which you can freely extend
-// with your own custom fields. It uses ExpandedClaims as the base struct to start with.
-func ExtendExpandedClaims(claims ExpandedClaims) jwt.MapClaims {
+// ExtendExpanded returns an instance of jwt.MapClaims which you can freely extend
+// with your own custom fields. It uses ExpandedClaims as the base struct to start with
+// and returns a jwt.MapClaims which is just a wrapper for a map so you can add as many
+// custom fields as you would like while still getting the 7 standard JWT fields and the
+// 4 non-standard fields defined in this library.
+func ExtendExpanded(claims ExpandedClaims) jwt.MapClaims {
 	return jwt.MapClaims{
 		AudienceKey:  claims.Audience,
 		ExpiresAtKey: claims.ExpiresAt,
@@ -74,9 +77,11 @@ func ExtendExpandedClaims(claims ExpandedClaims) jwt.MapClaims {
 	}
 }
 
-// ExtendStandardClaims returns an instance of jwt.MapClaims which you can freely extend
-// with your own custom fields. It uses jwt.StandardClaims as the base struct to start with.
-func ExtendStandardClaims(claims jwt.StandardClaims) jwt.MapClaims {
+// ExtendStandard returns an instance of jwt.MapClaims which you can freely extend
+// with your own custom fields. It uses jwt.StandardClaims as the base struct to start with
+// and returns a jwt.MapClaims which is just a wrapper for a map so you can add as many
+// custom fields as you would like while still getting the 7 standard JWT fields.
+func ExtendStandard(claims jwt.StandardClaims) jwt.MapClaims {
 	return jwt.MapClaims{
 		AudienceKey:  claims.Audience,
 		ExpiresAtKey: claims.ExpiresAt,
@@ -88,9 +93,12 @@ func ExtendStandardClaims(claims jwt.StandardClaims) jwt.MapClaims {
 	}
 }
 
-// ExtractCustomClaims takes in a claims map that is used to create JWTs
-// and returns a generic interface value that you can use to convert
-func ExtractCustomClaims(mapClaims jwt.MapClaims, val any) error {
+// ExtractCustom takes in a generic claims map that can have any values
+// set and attempts to pull out whatever custom struct you should have
+// previously used to create the claims originally. An error will be
+// returned if the generic map that stores the claims can't be converted
+// to the struct of your choice through JSON marshalling.
+func ExtractCustom(mapClaims jwt.MapClaims, val any) error {
 	jsonBytes, err := json.Marshal(mapClaims)
 	if err != nil {
 		return err
@@ -104,9 +112,11 @@ func ExtractCustomClaims(mapClaims jwt.MapClaims, val any) error {
 	return nil
 }
 
-// ExtractStandardClaims takes in the claims map that is used to create JWTs
-// and returns the standard 7 values expected in all json web tokens
-func ExtractStandardClaims(mapClaims jwt.MapClaims, standardClaims *jwt.StandardClaims) error {
+// ExtractStandard accepts a generic claims map that can have any values set and
+// attempts to pull out a standard jwt.StandardClaims object from the claims map.
+// The input claims should have been generated originally by a jwt.StandardClaims
+// instance so they can be cleanly extracted back into an instance of jwt.StandardClaims.
+func ExtractStandard(mapClaims jwt.MapClaims, standardClaims *jwt.StandardClaims) error {
 	jsonBytes, err := json.Marshal(mapClaims)
 	if err != nil {
 		return err
@@ -120,6 +130,12 @@ func ExtractStandardClaims(mapClaims jwt.MapClaims, standardClaims *jwt.Standard
 	return nil
 }
 
+// Sign accepts a final set of claims, either jwt.StandardClaims, ExpandedClaims,
+// or something entirely custom that you have created yourself. It will sign the
+// claims using the HMAC value loaded from environment variables and return the
+// signed JWT if no error, otherwise the empty string and an error. To convert
+// a GoLang struct to a claims object use ExtendStandard or ExtendExpanded
+// to get started.
 func Sign(mapClaims jwt.MapClaims) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS512, mapClaims)
 
@@ -133,7 +149,7 @@ func Sign(mapClaims jwt.MapClaims) (string, error) {
 }
 
 // VerifyJWT accepts the user JWT from the Authorization header
-// and returns the MapClaims OR a http status code and error set
+// and returns the MapClaims or nil and an error set.
 func VerifyJWT(userJWT string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(userJWT, keyFunc)
 	if err != nil {
