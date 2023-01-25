@@ -1,12 +1,13 @@
-package jwt_auth
+package lambda_jwt
 
 import (
 	"context"
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
-	"github.com/seantcanavan/lmdrouter"
-	"github.com/seantcanavan/lmdrouter/response"
+	"github.com/seantcanavan/lambda_jwt_router/response"
+	"github.com/seantcanavan/lambda_jwt_router/router"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -15,12 +16,28 @@ var ErrNoAuthorizationHeader = errors.New("no Authorization header value set")
 var ErrNoBearerPrefix = errors.New("missing 'Bearer ' prefix for Authorization header value")
 var ErrVerifyJWT = errors.New("unable to verify JWT to retrieve claims. try logging in again to ensure it is not expired")
 
-// DecodeAndInjectStandardClaims attempts to parse a Json Web Token from the req's "Authorization"
+// AllowOptionsMW is a helper middleware function that will immediately return
+// a successful request if the method is OPTIONS. This makes sure that
+// HTTP OPTIONS calls for CORS functionality are supported.
+func AllowOptionsMW(next router.Handler) router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		res events.APIGatewayProxyResponse,
+		err error,
+	) {
+		if req.HTTPMethod == "OPTIONS" { // immediately return success for options calls for CORS reqs
+			return response.Empty()
+		}
+
+		return next(ctx, req)
+	}
+}
+
+// DecodeAndInjectStandardClaims attempts to parse a Json Web Token from the request's "Authorization"
 // header. If the Authorization header is missing, or does not contain a valid Json Web Token
 // (JWT) then an error message and appropriate HTTP status code will be returned. If the JWT
 // is correctly set and contains a StandardClaim then the values from that standard claim
 // will be added to the context object for others to use during their processing.
-func DecodeAndInjectStandardClaims(next lmdrouter.Handler) lmdrouter.Handler {
+func DecodeAndInjectStandardClaims(next router.Handler) router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		res events.APIGatewayProxyResponse,
 		err error,
@@ -49,12 +66,12 @@ func DecodeAndInjectStandardClaims(next lmdrouter.Handler) lmdrouter.Handler {
 	}
 }
 
-// DecodeAndInjectExpandedClaims attempts to parse a Json Web Token from the req's "Authorization"
+// DecodeAndInjectExpandedClaims attempts to parse a Json Web Token from the request's "Authorization"
 // header. If the Authorization header is missing, or does not contain a valid Json Web Token
 // (JWT) then an error message and appropriate HTTP status code will be returned. If the JWT
 // is correctly set and contains an instance of ExpandedClaims then the values from
 // that standard claim will be added to the context object for others to use during their processing.
-func DecodeAndInjectExpandedClaims(next lmdrouter.Handler) lmdrouter.Handler {
+func DecodeAndInjectExpandedClaims(next router.Handler) router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		res events.APIGatewayProxyResponse,
 		err error,
@@ -109,4 +126,35 @@ func ExtractJWT(headers map[string]string) (jwt.MapClaims, int, error) {
 	}
 
 	return mapClaims, http.StatusOK, nil
+}
+
+// LogRequestMW is a standard middleware function that will log every incoming
+// events.APIGatewayProxyRequest request and the pertinent information in it.
+//goland:noinspection GoUnusedExportedFunction
+func LogRequestMW(next router.Handler) router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		res events.APIGatewayProxyResponse,
+		err error,
+	) {
+		format := "[%s] [%s %s] [%d]%s"
+		level := "INF"
+		var code int
+		var extra string
+
+		res, err = next(ctx, req)
+		if err != nil {
+			level = "ERR"
+			code = http.StatusInternalServerError
+			extra = " " + err.Error()
+		} else {
+			code = res.StatusCode
+			if code >= 400 {
+				level = "ERR"
+			}
+		}
+
+		log.Printf(format, level, req.HTTPMethod, req.Path, code, extra)
+
+		return res, err
+	}
 }

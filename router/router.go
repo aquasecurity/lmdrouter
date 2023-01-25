@@ -1,4 +1,4 @@
-// Package lmdrouter is a simple-to-use library for writing AWS Lambda functions in Go
+// Package router is a simple-to-use library for writing AWS Lambda functions in Go
 // that listen to events of type API Gateway Proxy Req (represented by the
 // `events.APIGatewayProxyRequest` type of the github.com/aws-lambda-go/events
 // package).
@@ -57,12 +57,12 @@
 // * Implements net/http.Handler for local development and general usage outside
 //  an AWS Lambda environment.
 //
-package lmdrouter
+package router
 
 import (
 	"context"
 	"fmt"
-	"github.com/seantcanavan/lmdrouter/response"
+	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -218,7 +218,7 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	}
 
 	r.methods["OPTIONS"] = resource{
-		handler: l.GetOptionsHandler(),
+		handler: l.getOptionsHandler(),
 		hasMiddleware: hasMiddleware{
 			middleware: middleware,
 		},
@@ -227,7 +227,7 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	l.routes[path] = r
 }
 
-func (l *Router) GetOptionsHandler() Handler {
+func (l *Router) getOptionsHandler() Handler {
 	return func(context.Context, events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error,
@@ -269,15 +269,15 @@ func (l *Router) Handler(
 	ctx context.Context,
 	req events.APIGatewayProxyRequest,
 ) (events.APIGatewayProxyResponse, error) {
-	rsrc, err := l.matchReq(&req)
+	matchedResource, err := l.matchReq(&req)
 	if err != nil {
 		return response.Error(err)
 	}
 
-	handler := rsrc.handler
+	handler := matchedResource.handler
 
-	for i := len(rsrc.middleware) - 1; i >= 0; i-- {
-		handler = rsrc.middleware[i](handler)
+	for i := len(matchedResource.middleware) - 1; i >= 0; i-- {
+		handler = matchedResource.middleware[i](handler)
 	}
 	for i := len(l.middleware) - 1; i >= 0; i-- {
 		handler = l.middleware[i](handler)
@@ -287,7 +287,7 @@ func (l *Router) Handler(
 }
 
 func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
-	rsrc resource,
+	matchedResource resource,
 	err error,
 ) {
 	// remove trailing slash from req path
@@ -308,7 +308,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 
 		// do we have this method?
 		var ok bool
-		rsrc, ok = r.methods[req.HTTPMethod]
+		matchedResource, ok = r.methods[req.HTTPMethod]
 		if !ok {
 			// we matched a route, but it didn't support this method. Mark negErr
 			// with a 405 error, but continue, we might match another route
@@ -322,7 +322,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		// process path parameters
 		for i, param := range r.paramNames {
 			if len(matches)-1 < len(r.paramNames) {
-				return rsrc, response.HTTPError{
+				return matchedResource, response.HTTPError{
 					Status:  http.StatusInternalServerError,
 					Message: "Failed matching path parameters",
 				}
@@ -335,8 +335,8 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 			req.PathParameters[param], _ = url.QueryUnescape(matches[i+1])
 		}
 
-		return rsrc, nil
+		return matchedResource, nil
 	}
 
-	return rsrc, negErr
+	return matchedResource, negErr
 }

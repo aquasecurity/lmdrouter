@@ -1,10 +1,11 @@
-package lmdrouter
+package router
 
 import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 
@@ -41,9 +42,12 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(500)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": fmt.Sprintf("Failed reading req body: %s", err),
-		}) // nolint: errcheck
+		})
+		if encodeErr != nil {
+			log.Printf("encodeErr [%+v]", encodeErr)
+		}
 		return
 	}
 
@@ -61,9 +65,12 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(500)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": fmt.Sprintf("Failed executing handler: %s", err),
-		}) // nolint: errcheck
+		})
+		if encodeErr != nil {
+			log.Printf("encodeErr [%+v]", encodeErr)
+		}
 		return
 	}
 
@@ -73,9 +80,12 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 			w.WriteHeader(500)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": fmt.Sprintf("Handler returned invalid base64 data: %s", err),
-			}) // nolint: errcheck
+			})
+			if encodeErr != nil {
+				log.Printf("encodeErr [%+v]", encodeErr)
+			}
 			return
 		}
 	} else {
@@ -99,7 +109,10 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(res.StatusCode)
-	w.Write(resBody) // nolint: errcheck
+	_, writeErr := w.Write(resBody)
+	if writeErr != nil {
+		log.Printf("writeErr [%+v]", writeErr)
+	}
 }
 
 func convertMap(in map[string][]string) map[string]string {

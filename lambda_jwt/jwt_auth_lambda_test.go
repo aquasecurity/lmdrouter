@@ -1,4 +1,4 @@
-package jwt_auth
+package lambda_jwt
 
 import (
 	"context"
@@ -6,24 +6,79 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
-	"github.com/seantcanavan/lmdrouter"
-	"github.com/seantcanavan/lmdrouter/response"
-	"github.com/seantcanavan/lmdrouter/utils"
+	"github.com/seantcanavan/lambda_jwt_router/response"
+	"github.com/seantcanavan/lambda_jwt_router/router"
+	"math/rand"
 	"net/http"
 	"testing"
 	"time"
 )
 
+func TestAllowOptionsMW(t *testing.T) {
+	t.Run("verify empty OPTIONS req succeeds", func(t *testing.T) {
+		req := events.APIGatewayProxyRequest{
+			HTTPMethod:     http.MethodOptions,
+			Headers:        nil,
+			RequestContext: GenerateAPIGatewayProxyReq(),
+		}
+
+		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
+		jwtMiddlewareHandler := AllowOptionsMW(GenerateEmptySuccessHandler())
+		res, err := jwtMiddlewareHandler(nil, req)
+		assert.Nil(t, err)
+		assert.Equal(t, res.StatusCode, http.StatusOK)
+	})
+	t.Run("verify OPTIONS req succeeds with invalid JWT for AllowOptions", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
+		signedJWT, err := Sign(nil)
+		assert.Nil(t, err)
+
+		signedJWT = signedJWT + "hi" // create an invalid JWT
+
+		req := events.APIGatewayProxyRequest{
+			HTTPMethod: http.MethodOptions,
+			Headers: map[string]string{
+				"Authorization": "Bearer " + signedJWT,
+			},
+			RequestContext: GenerateAPIGatewayProxyReq(),
+		}
+
+		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
+		jwtMiddlewareHandler := AllowOptionsMW(GenerateEmptySuccessHandler())
+		res, err := jwtMiddlewareHandler(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, res.StatusCode, http.StatusOK)
+	})
+	t.Run("verify OPTIONS req succeeds with no Authorization header for AllowOptions", func(t *testing.T) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
+
+		req := events.APIGatewayProxyRequest{
+			HTTPMethod:     http.MethodOptions,
+			Headers:        nil,
+			RequestContext: GenerateAPIGatewayProxyReq(),
+		}
+
+		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
+		jwtMiddlewareHandler := AllowOptionsMW(GenerateEmptySuccessHandler())
+		res, err := jwtMiddlewareHandler(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, res.StatusCode, http.StatusOK)
+	})
+}
+
 func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 	t.Run("verify error is returned by DecodeAndInjectExpandedClaims when missing Authorization header", func(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
-		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(utils.GenerateEmptyErrorHandler())
+		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(GenerateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
 		var responseBody response.HTTPError
-		err = lmdrouter.UnmarshalResponse(res, &responseBody)
+		err = router.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
 		assert.Equal(t, responseBody.Status, res.StatusCode)
@@ -43,7 +98,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},
-			RequestContext: utils.GenerateAPIGatewayProxyReq(),
+			RequestContext: GenerateAPIGatewayProxyReq(),
 		}
 
 		jwtMiddlewareHandler := DecodeAndInjectExpandedClaims(GenerateSuccessHandlerAndMapExpandedContext())
@@ -52,7 +107,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		assert.Equal(t, res.StatusCode, http.StatusOK)
 
 		var returnedClaims ExpandedClaims
-		err = lmdrouter.UnmarshalResponse(res, &returnedClaims)
+		err = router.UnmarshalResponse(res, &returnedClaims)
 		assert.Nil(t, err)
 		// this verifies that the context gets set in the middleware inject function since the
 		// dummy handler passed to it as the 'next' call injects the values from its passed
@@ -76,13 +131,13 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 func TestDecodeAndInjectStandardClaims(t *testing.T) {
 	t.Run("verify error is returned by DecodeAndInjectStandardClaims when missing Authorization header", func(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
-		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(utils.GenerateEmptyErrorHandler())
+		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(GenerateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
 		assert.Nil(t, err)
 		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
 
 		var responseBody response.HTTPError
-		err = lmdrouter.UnmarshalResponse(res, &responseBody)
+		err = router.UnmarshalResponse(res, &responseBody)
 		assert.Nil(t, err)
 
 		assert.Equal(t, responseBody.Status, res.StatusCode)
@@ -102,7 +157,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},
-			RequestContext: utils.GenerateAPIGatewayProxyReq(),
+			RequestContext: GenerateAPIGatewayProxyReq(),
 		}
 
 		jwtMiddlewareHandler := DecodeAndInjectStandardClaims(GenerateSuccessHandlerAndMapStandardContext())
@@ -111,7 +166,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		assert.Equal(t, res.StatusCode, http.StatusOK)
 
 		var returnedClaims jwt.StandardClaims
-		err = lmdrouter.UnmarshalResponse(res, &returnedClaims)
+		err = router.UnmarshalResponse(res, &returnedClaims)
 		assert.Nil(t, err)
 		// this verifies that the context gets set in the middleware inject function since the
 		// dummy handler passed to it as the 'next' call injects the values from its passed
@@ -211,7 +266,7 @@ func TestExtractJWT(t *testing.T) {
 // that takes the values inserted into the context object by DecodeAndInjectExpandedClaims
 // and returns them as an object from the request so that unit tests can analyze the values
 // and make sure they have done the full trip from JWT -> CTX -> unit test
-func GenerateSuccessHandlerAndMapExpandedContext() lmdrouter.Handler {
+func GenerateSuccessHandlerAndMapExpandedContext() router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
@@ -235,7 +290,7 @@ func GenerateSuccessHandlerAndMapExpandedContext() lmdrouter.Handler {
 // that takes the values inserted into the context object by DecodeAndInjectStandardClaims
 // and returns them as an object from the request so that unit tests can analyze the values
 // and make sure they have done the full trip from JWT -> CTX -> unit test
-func GenerateSuccessHandlerAndMapStandardContext() lmdrouter.Handler {
+func GenerateSuccessHandlerAndMapStandardContext() router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
@@ -249,4 +304,66 @@ func GenerateSuccessHandlerAndMapStandardContext() lmdrouter.Handler {
 			Subject:   ctx.Value(SubjectKey).(string),
 		})
 	}
+}
+
+func GenerateAPIGatewayProxyReq() events.APIGatewayProxyRequestContext {
+	return events.APIGatewayProxyRequestContext{
+		AccountID:     GenerateRandomString(10),
+		ResourceID:    GenerateRandomString(10),
+		OperationName: GenerateRandomString(10),
+		Stage:         GenerateRandomString(10),
+		DomainName:    GenerateRandomString(10),
+		DomainPrefix:  GenerateRandomString(10),
+		RequestID:     GenerateRandomString(10),
+		Protocol:      GenerateRandomString(10),
+		Identity: events.APIGatewayRequestIdentity{
+			CognitoIdentityPoolID:         GenerateRandomString(10),
+			AccountID:                     GenerateRandomString(10),
+			CognitoIdentityID:             GenerateRandomString(10),
+			Caller:                        GenerateRandomString(10),
+			APIKey:                        GenerateRandomString(10),
+			APIKeyID:                      GenerateRandomString(10),
+			AccessKey:                     GenerateRandomString(10),
+			SourceIP:                      GenerateRandomString(10),
+			CognitoAuthenticationType:     GenerateRandomString(10),
+			CognitoAuthenticationProvider: GenerateRandomString(10),
+			UserArn:                       GenerateRandomString(10),
+			UserAgent:                     GenerateRandomString(10),
+			User:                          GenerateRandomString(10),
+		},
+		ResourcePath:     GenerateRandomString(10),
+		Path:             GenerateRandomString(10),
+		Authorizer:       map[string]interface{}{"hi there": "sean"},
+		HTTPMethod:       GenerateRandomString(10),
+		RequestTime:      GenerateRandomString(10),
+		RequestTimeEpoch: 0,
+		APIID:            GenerateRandomString(10),
+	}
+}
+
+func GenerateEmptySuccessHandler() router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		events.APIGatewayProxyResponse,
+		error) {
+		return response.Empty()
+	}
+}
+
+func GenerateEmptyErrorHandler() router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		events.APIGatewayProxyResponse,
+		error) {
+		return response.ErrorAndStatus(http.StatusInternalServerError, errors.New("this error is simulated"))
+	}
+}
+
+func GenerateRandomString(n int) string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	rand.Seed(time.Now().UnixNano())
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+
+	return string(b)
 }

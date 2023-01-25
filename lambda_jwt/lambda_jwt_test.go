@@ -1,11 +1,10 @@
-package jwt_auth
+package lambda_jwt
 
 import (
 	"errors"
 	"github.com/golang-jwt/jwt"
 	"github.com/jgroeneveld/trial/assert"
 	"github.com/joho/godotenv"
-	"github.com/seantcanavan/lmdrouter/utils"
 	"log"
 	"strings"
 	"testing"
@@ -26,17 +25,17 @@ func setup() {
 
 func TestExtendExpandedClaims(t *testing.T) {
 	expandedClaims := ExpandedClaims{
-		Audience:  utils.GenerateRandomString(10),
+		Audience:  GenerateRandomString(10),
 		ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
-		FirstName: utils.GenerateRandomString(10),
-		FullName:  utils.GenerateRandomString(10),
-		ID:        utils.GenerateRandomString(10),
+		FirstName: GenerateRandomString(10),
+		FullName:  GenerateRandomString(10),
+		ID:        GenerateRandomString(10),
 		IssuedAt:  time.Now().Unix(),
-		Issuer:    utils.GenerateRandomString(10),
-		Level:     utils.GenerateRandomString(10),
+		Issuer:    GenerateRandomString(10),
+		Level:     GenerateRandomString(10),
 		NotBefore: time.Now().Add(time.Hour * -1).Unix(),
-		Subject:   utils.GenerateRandomString(10),
-		UserType:  utils.GenerateRandomString(10),
+		Subject:   GenerateRandomString(10),
+		UserType:  GenerateRandomString(10),
 	}
 
 	extendedClaims := ExtendExpandedClaims(expandedClaims)
@@ -73,13 +72,13 @@ func TestExtendExpandedClaims(t *testing.T) {
 
 func TestExtendStandardClaims(t *testing.T) {
 	standardClaims := jwt.StandardClaims{
-		Audience:  utils.GenerateRandomString(10),
+		Audience:  GenerateRandomString(10),
 		ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
-		Id:        utils.GenerateRandomString(10),
+		Id:        GenerateRandomString(10),
 		IssuedAt:  time.Now().Unix(),
-		Issuer:    utils.GenerateRandomString(10),
+		Issuer:    GenerateRandomString(10),
 		NotBefore: time.Now().Add(time.Hour * -1).Unix(),
-		Subject:   utils.GenerateRandomString(10),
+		Subject:   GenerateRandomString(10),
 	}
 
 	extendedClaims := ExtendStandardClaims(standardClaims)
@@ -117,7 +116,7 @@ func TestExtractCustomClaims(t *testing.T) {
 			ExpiresAt int64 `json:"exp"`
 		}
 		extractCustomErr := ExtractCustomClaims(jwt.MapClaims{
-			"exp": utils.GenerateRandomString(10), // exp should be an integer
+			"exp": GenerateRandomString(10), // exp should be an integer
 		}, &badClaims{})
 
 		assert.NotNil(t, extractCustomErr)
@@ -147,7 +146,7 @@ func TestExtractCustomClaims(t *testing.T) {
 func TestExtractStandardClaims(t *testing.T) {
 	t.Run("verify ExtractStandardClaims returns an err when unmarshalling to invalid standard claims object", func(t *testing.T) {
 		extractCustomErr := ExtractStandardClaims(jwt.MapClaims{
-			"exp": utils.GenerateRandomString(10), // exp should be an integer
+			"exp": GenerateRandomString(10), // exp should be an integer
 		}, &jwt.StandardClaims{})
 
 		assert.NotNil(t, extractCustomErr)
@@ -181,7 +180,7 @@ func TestSign(t *testing.T) {
 
 func TestVerifyJWT(t *testing.T) {
 	t.Run("verify err when parsing invalid jwt", func(t *testing.T) {
-		_, err := VerifyJWT(utils.GenerateRandomString(10))
+		_, err := VerifyJWT(GenerateRandomString(10))
 		assert.NotNil(t, err)
 		assert.True(t, errors.Is(err, ErrInvalidJWT))
 	})
@@ -200,28 +199,28 @@ func TestVerifyJWT(t *testing.T) {
 
 func generateExpandedMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
-		AudienceKey:  utils.GenerateRandomString(10),
+		AudienceKey:  GenerateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
-		FirstNameKey: utils.GenerateRandomString(10),
-		FullNameKey:  utils.GenerateRandomString(10),
-		IDKey:        utils.GenerateRandomString(10),
+		FirstNameKey: GenerateRandomString(10),
+		FullNameKey:  GenerateRandomString(10),
+		IDKey:        GenerateRandomString(10),
 		IssuedAtKey:  time.Now().Unix(),
-		IssuerKey:    utils.GenerateRandomString(10),
-		LevelKey:     utils.GenerateRandomString(10),
+		IssuerKey:    GenerateRandomString(10),
+		LevelKey:     GenerateRandomString(10),
 		NotBeforeKey: time.Now().Add(time.Hour * -1).Unix(),
-		SubjectKey:   utils.GenerateRandomString(10),
-		UserTypeKey:  utils.GenerateRandomString(10),
+		SubjectKey:   GenerateRandomString(10),
+		UserTypeKey:  GenerateRandomString(10),
 	}
 }
 
 func generateStandardMapClaims() jwt.MapClaims {
 	return jwt.MapClaims{
-		AudienceKey:  utils.GenerateRandomString(10),
+		AudienceKey:  GenerateRandomString(10),
 		ExpiresAtKey: time.Now().Add(time.Hour * 30).Unix(),
-		IDKey:        utils.GenerateRandomString(10),
+		IDKey:        GenerateRandomString(10),
 		IssuedAtKey:  time.Now().Unix(),
-		IssuerKey:    utils.GenerateRandomString(10),
+		IssuerKey:    GenerateRandomString(10),
 		NotBeforeKey: time.Now().Add(time.Hour * -1).Unix(),
-		SubjectKey:   utils.GenerateRandomString(10),
+		SubjectKey:   GenerateRandomString(10),
 	}
 }

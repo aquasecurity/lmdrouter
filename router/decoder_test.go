@@ -1,8 +1,8 @@
-package lmdrouter
+package router
 
 import (
 	"errors"
-	"github.com/seantcanavan/lmdrouter/response"
+	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"testing"
 	"time"
@@ -25,6 +25,17 @@ const (
 	numberThree Number = "three"
 )
 
+type mockItem struct {
+	ID   string
+	Name string
+	Date time.Time
+}
+
+type mockGetReq struct {
+	ID            string `lambda:"path.id"`
+	ShowSomething bool   `lambda:"query.show_something"`
+}
+
 type mockListReq struct {
 	ID         string              `lambda:"path.id"`
 	Page       int64               `lambda:"query.page"`
@@ -43,21 +54,10 @@ type mockListReq struct {
 	Encoding   []string            `lambda:"header.Accept-Encoding"`
 }
 
-type mockGetReq struct {
-	ID            string `lambda:"path.id"`
-	ShowSomething bool   `lambda:"query.show_something"`
-}
-
 type mockPostReq struct {
 	ID   string    `lambda:"path.id"`
 	Name string    `json:"name"`
 	Date time.Time `json:"date"`
-}
-
-type mockItem struct {
-	ID   string
-	Name string
-	Date time.Time
 }
 
 type stringAliasExample string

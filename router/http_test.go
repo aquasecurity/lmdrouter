@@ -1,4 +1,4 @@
-package lmdrouter
+package router
 
 import (
 	"encoding/json"

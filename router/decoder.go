@@ -1,4 +1,4 @@
-package lmdrouter
+package router
 
 // nolint: unused
 
@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/seantcanavan/lmdrouter/response"
+	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"reflect"
 	"regexp"
@@ -22,10 +22,10 @@ var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
 
 // UnmarshalRequest "fills" out a target Go struct with data from the req.
 // If body is true, then the req body is assumed to be JSON and simply
-// unmarshaled into the target (taking into account that the req body may
+// unmarshalled into the target (taking into account that the req body may
 // be base-64 encoded). After that, or if body is false, the function will
 // traverse the exported fields of the target struct, and fill those that
-// include the "lambda" struct tag with values taken from the req's query
+// include the "lambda" struct tag with values taken from the request's query
 // string parameters, path parameters and headers, according to the field's
 // struct tag definition. This means a struct value can be filled with data from
 // the body, the path, the query string and the headers at the same time.
@@ -70,6 +70,9 @@ func UnmarshalRequest(req events.APIGatewayProxyRequest, body bool, target inter
 	return unmarshalEvent(req, target)
 }
 
+// UnmarshalResponse should generally be used only when testing as normally you return the response
+// directly to the caller and won't need to Unmarshal it. However, if you are testing locally then
+// it will help you extract the response body of a lambda request and marshal it to an object.
 func UnmarshalResponse(res events.APIGatewayProxyResponse, target interface{}) error {
 	rv := reflect.ValueOf(target)
 	if rv.Kind() != reflect.Ptr || rv.IsNil() {
@@ -211,11 +214,11 @@ func unmarshalField(
 	case reflect.Slice:
 		// we'll be extracting values from multiParam, generating a slice and
 		// putting it in valueField
-		strs, ok := multiParam[param]
+		strValues, ok := multiParam[param]
 		if ok {
-			slice := reflect.MakeSlice(typeField, len(strs), len(strs))
+			slice := reflect.MakeSlice(typeField, len(strValues), len(strValues))
 
-			for i, str := range strs {
+			for i, str := range strValues {
 				err := unmarshalField(
 					typeField.Elem(),
 					slice.Index(i),

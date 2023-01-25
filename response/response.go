@@ -18,18 +18,6 @@ const ContentTypeKey = "Content-Type"
 // name of the status code is used as the error message instead.
 var ExposeServerErrors = true
 
-// Success wraps Custom assuming a http.StatusOK status code and no
-// custom headers to return. This was such a common use case I felt it
-// necessary to create a wrapper to make everyone's life easier.
-func Success(data interface{}) (events.APIGatewayProxyResponse, error) {
-	return Custom(http.StatusOK, nil, data)
-}
-
-// Empty returns a simple empty events.APIGatewayProxyResponse with http.StatusOK
-func Empty() (events.APIGatewayProxyResponse, error) {
-	return Custom(http.StatusOK, nil, struct{}{})
-}
-
 // Custom generated an events.APIGatewayProxyResponse object that can
 // be directly returned via the lambda's handler function. It receives an HTTP
 // status code for the response, a map of HTTP headers (can be empty or nil),
@@ -39,7 +27,6 @@ func Custom(httpStatus int, headers map[string]string, data interface{}) (
 	events.APIGatewayProxyResponse,
 	error,
 ) {
-
 	b, err := json.Marshal(data)
 	if err != nil {
 		httpStatus = http.StatusInternalServerError
@@ -60,23 +47,9 @@ func Custom(httpStatus int, headers map[string]string, data interface{}) (
 	}, nil
 }
 
-// File generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
-// file bytes encoded to base64, and the http status set to http.StatusOK
-func File(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
-	if headers == nil {
-		headers = map[string]string{
-			ContentTypeKey: contentType,
-		}
-	} else {
-		headers[ContentTypeKey] = contentType
-	}
-
-	return events.APIGatewayProxyResponse{
-		StatusCode:      http.StatusOK,
-		Headers:         addCors(headers),
-		Body:            base64.StdEncoding.EncodeToString(fileBytes),
-		IsBase64Encoded: true,
-	}, nil
+// Empty returns a simple empty events.APIGatewayProxyResponse with http.StatusOK
+func Empty() (events.APIGatewayProxyResponse, error) {
+	return Custom(http.StatusOK, nil, struct{}{})
 }
 
 // Error generates an events.APIGatewayProxyResponse from an error value.
@@ -117,6 +90,32 @@ func ErrorAndStatus(httpStatus int, err error) (events.APIGatewayProxyResponse, 
 	}
 
 	return Custom(httpErr.Status, nil, httpErr)
+}
+
+// File generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
+// file bytes encoded to base64, and the http status set to http.StatusOK
+func File(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
+	if headers == nil {
+		headers = map[string]string{
+			ContentTypeKey: contentType,
+		}
+	} else {
+		headers[ContentTypeKey] = contentType
+	}
+
+	return events.APIGatewayProxyResponse{
+		StatusCode:      http.StatusOK,
+		Headers:         addCors(headers),
+		Body:            base64.StdEncoding.EncodeToString(fileBytes),
+		IsBase64Encoded: true,
+	}, nil
+}
+
+// Success wraps Custom assuming a http.StatusOK status code and no
+// custom headers to return. This was such a common use case I felt it
+// necessary to create a wrapper to make everyone's life easier.
+func Success(data interface{}) (events.APIGatewayProxyResponse, error) {
+	return Custom(http.StatusOK, nil, data)
 }
 
 // addCors injects CORS Origin and CORS Methods headers into the response object before it's returned.

@@ -1,10 +1,10 @@
-package lmdrouter
+package router
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/seantcanavan/lmdrouter/response"
+	"github.com/seantcanavan/lambda_jwt_router/response"
 	"net/http"
 	"strings"
 	"testing"
@@ -120,15 +120,15 @@ func TestRouter(t *testing.T) {
 			assert.Equal(t, http.StatusNotFound, httpErr.Status, "Error code must be 404")
 		})
 
-		t.Run("GET /api/fake-id/stuff/fakey-fake", func(t *testing.T) {
+		t.Run("GET /api/fake-id/stuff/faked-fake", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
 				HTTPMethod: "GET",
-				Path:       "/api/fake-id/stuff/fakey-fake",
+				Path:       "/api/fake-id/stuff/faked-fake",
 			}
 			_, err := lmd.matchReq(&req)
 			assert.Equal(t, nil, err, "Error must be nil")
 			assert.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
-			assert.Equal(t, "fakey-fake", req.PathParameters["fake"], "'fake' must be correct")
+			assert.Equal(t, "faked-fake", req.PathParameters["fake"], "'fake' must be correct")
 		})
 	})
 
@@ -225,7 +225,7 @@ func TestRouter(t *testing.T) {
 	})
 }
 
-func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
+func listSomethings(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -248,7 +248,7 @@ func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
 	return response.Custom(http.StatusOK, nil, output)
 }
 
-func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
+func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -268,7 +268,7 @@ func postSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	}, output)
 }
 
-func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
+func getSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -288,7 +288,7 @@ func getSomething(ctx context.Context, req events.APIGatewayProxyRequest) (
 	return response.Custom(http.StatusOK, nil, output)
 }
 
-func listStuff(ctx context.Context, req events.APIGatewayProxyRequest) (
+func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
@@ -362,7 +362,7 @@ func auth(next Handler) Handler {
 		return response.Custom(
 			http.StatusUnauthorized,
 			map[string]string{"WWW-Authenticate": "Bearer"},
-			response.HTTPError{http.StatusUnauthorized, "Unauthorized"},
+			response.HTTPError{Status: http.StatusUnauthorized, Message: "Unauthorized"},
 		)
 	}
 }

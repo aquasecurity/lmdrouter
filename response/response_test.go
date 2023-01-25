@@ -8,7 +8,15 @@ import (
 	"github.com/jgroeneveld/trial/assert"
 )
 
-func TestHandleError(t *testing.T) {
+func TestCustom(t *testing.T) {
+	assert.True(t, false)
+}
+
+func TestEmpty(t *testing.T) {
+	assert.True(t, false)
+}
+
+func TestError(t *testing.T) {
 	t.Run("Handle an ErrorAndStatus", func(t *testing.T) {
 		res, _ := Error(HTTPError{
 			Status:  http.StatusBadRequest,
@@ -51,4 +59,16 @@ func TestHandleError(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
 		assert.Equal(t, `{"status":500,"message":"Internal Server Error"}`, res.Body, "body must be correct")
 	})
+}
+
+func TestErrorAndStatus(t *testing.T) {
+	assert.True(t, false)
+}
+
+func TestFile(t *testing.T) {
+	assert.True(t, false)
+}
+
+func TestSuccess(t *testing.T) {
+	assert.True(t, false)
 }

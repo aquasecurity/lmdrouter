@@ -1,4 +1,4 @@
-module github.com/seantcanavan/lmdrouter
+module github.com/seantcanavan/lambda_jwt_router
 
 go 1.18
 

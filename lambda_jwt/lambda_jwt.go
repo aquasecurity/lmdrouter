@@ -1,4 +1,4 @@
-package jwt_auth
+package lambda_jwt
 
 import (
 	"encoding/hex"
