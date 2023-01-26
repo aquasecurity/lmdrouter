@@ -79,22 +79,6 @@ func ErrorRes(err error) (events.APIGatewayProxyResponse, error) {
 	return CustomRes(httpErr.Status, nil, httpErr)
 }
 
-// ErrorAndStatusRes generates a custom error return response with the given http status code and error.
-// Setting ExposeServerErrors to false will prevent leaking data to clients.
-func ErrorAndStatusRes(httpStatus int, err error) (events.APIGatewayProxyResponse, error) {
-	httpErr := HTTPError{
-		Status:  httpStatus,
-		Message: err.Error(),
-	}
-
-	// If we're not exposing server errors then return a general message
-	if httpErr.Status >= 500 && !ExposeServerErrors {
-		httpErr.Message = http.StatusText(httpErr.Status)
-	}
-
-	return CustomRes(httpErr.Status, nil, httpErr)
-}
-
 // FileRes generates a new events.APIGatewayProxyResponse with the ContentTypeKey header set appropriately, the
 // file bytes added to the response body, and the http status set to http.StatusOK
 func FileRes(contentType string, headers map[string]string, fileBytes []byte) (events.APIGatewayProxyResponse, error) {
@@ -131,6 +115,22 @@ func FileB64Res(contentType string, headers map[string]string, fileBytes []byte)
 		Body:            base64.StdEncoding.EncodeToString(fileBytes),
 		IsBase64Encoded: true,
 	}, nil
+}
+
+// StatusAndErrorRes generates a custom error return response with the given http status code and error.
+// Setting ExposeServerErrors to false will prevent leaking data to clients.
+func StatusAndErrorRes(httpStatus int, err error) (events.APIGatewayProxyResponse, error) {
+	httpErr := HTTPError{
+		Status:  httpStatus,
+		Message: err.Error(),
+	}
+
+	// If we're not exposing server errors then return a general message
+	if httpErr.Status >= 500 && !ExposeServerErrors {
+		httpErr.Message = http.StatusText(httpErr.Status)
+	}
+
+	return CustomRes(httpErr.Status, nil, httpErr)
 }
 
 // SuccessRes wraps CustomRes assuming a http.StatusOK status code and no

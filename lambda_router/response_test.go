@@ -13,7 +13,7 @@ type customStruct struct {
 	StructKey string `json:"structKey"`
 }
 
-func TestCustom(t *testing.T) {
+func TestCustomRes(t *testing.T) {
 	httpStatus := http.StatusTeapot
 	headers := map[string]string{
 		"key": "value",
@@ -46,7 +46,7 @@ func TestCustom(t *testing.T) {
 	})
 }
 
-func TestEmpty(t *testing.T) {
+func TestEmptyRes(t *testing.T) {
 	res, err := EmptyRes()
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 	assert.Nil(t, err)
@@ -62,8 +62,8 @@ func TestEmpty(t *testing.T) {
 	})
 }
 
-func TestError(t *testing.T) {
-	t.Run("Handle an ErrorAndStatusRes", func(t *testing.T) {
+func TestErrorRes(t *testing.T) {
+	t.Run("Handle an StatusAndErrorRes", func(t *testing.T) {
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid input",
@@ -75,7 +75,7 @@ func TestError(t *testing.T) {
 		assert.Equal(t, res.Headers[CORSOriginKey], "*")
 	})
 
-	t.Run("Handle an ErrorAndStatusRes when ExposeServerErrors is true", func(t *testing.T) {
+	t.Run("Handle an StatusAndErrorRes when ExposeServerErrors is true", func(t *testing.T) {
 		ExposeServerErrors = true
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusInternalServerError,
@@ -85,7 +85,7 @@ func TestError(t *testing.T) {
 		assert.Equal(t, `{"status":500,"message":"database down"}`, res.Body, "body must be correct")
 	})
 
-	t.Run("Handle an ErrorAndStatusRes when ExposeServerErrors is false", func(t *testing.T) {
+	t.Run("Handle an StatusAndErrorRes when ExposeServerErrors is false", func(t *testing.T) {
 		ExposeServerErrors = false
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusInternalServerError,
@@ -110,22 +110,7 @@ func TestError(t *testing.T) {
 	})
 }
 
-func TestErrorAndStatus(t *testing.T) {
-	newErr := errors.New("hello there")
-	res, err := ErrorAndStatusRes(http.StatusTeapot, newErr)
-	assert.Nil(t, err)
-
-	t.Run("verify ErrorAndStatusRes returns the correct status code", func(t *testing.T) {
-		assert.Equal(t, http.StatusTeapot, res.StatusCode)
-	})
-	t.Run("verify ErrorAndStatusRes embeds CORS headers in the response", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
-	})
-}
-
-func TestFile(t *testing.T) {
+func TestFileRes(t *testing.T) {
 	csvContent := `
 header1, header2
 value1, value2
@@ -147,7 +132,7 @@ value1, value2
 	})
 }
 
-func TestFileB64(t *testing.T) {
+func TestFileB64Res(t *testing.T) {
 	csvContent := `
 header1, header2
 value1, value2
@@ -174,7 +159,22 @@ value1, value2
 	})
 }
 
-func TestSuccess(t *testing.T) {
+func TestStatusAndErrorRes(t *testing.T) {
+	newErr := errors.New("hello there")
+	res, err := StatusAndErrorRes(http.StatusTeapot, newErr)
+	assert.Nil(t, err)
+
+	t.Run("verify StatusAndErrorRes returns the correct status code", func(t *testing.T) {
+		assert.Equal(t, http.StatusTeapot, res.StatusCode)
+	})
+	t.Run("verify StatusAndErrorRes embeds CORS headers in the response", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+	})
+}
+
+func TestSuccessRes(t *testing.T) {
 	cs := customStruct{StructKey: "hello there"}
 	res, err := SuccessRes(cs)
 	assert.Nil(t, err)

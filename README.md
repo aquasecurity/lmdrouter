@@ -26,6 +26,7 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
 
 ## All tests are passing
 ```
+go test -v ./...
 === RUN   TestAllowOptionsMW
 === RUN   TestAllowOptionsMW/verify_empty_OPTIONS_req_succeeds
 === RUN   TestAllowOptionsMW/verify_OPTIONS_req_succeeds_with_invalid_JWT_for_AllowOptions
@@ -103,7 +104,7 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
     --- PASS: TestVerifyJWT/verify_err_when_parsing_invalid_jwt (0.00s)
     --- PASS: TestVerifyJWT/verify_err_when_parsing_expired_token_with_valid_jwt (0.00s)
 PASS
-ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.004s
+ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
 === RUN   TestMarshalLambdaRequest
 === RUN   TestMarshalLambdaRequest/verify_MarshalReq_correctly_adds_the_JSON_string_to_the_request_body
 --- PASS: TestMarshalLambdaRequest (0.00s)
@@ -132,66 +133,66 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.004s
     --- PASS: TestHTTPHandler/POST_/api_with_auth (0.00s)
     --- PASS: TestHTTPHandler/GET_/api (0.00s)
     --- PASS: TestHTTPHandler/GET_/api/something/stuff (0.00s)
-=== RUN   TestCustom
-=== RUN   TestCustom/verify_CustomRes_returns_the_struct_in_the_response_body
-=== RUN   TestCustom/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers
-=== RUN   TestCustom/verify_CustomRes_returns_the_correct_status_code
-=== RUN   TestCustom/verify_CustomRes_embeds_CORS_headers_in_the_response_headers
---- PASS: TestCustom (0.00s)
-    --- PASS: TestCustom/verify_CustomRes_returns_the_struct_in_the_response_body (0.00s)
-    --- PASS: TestCustom/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers (0.00s)
-    --- PASS: TestCustom/verify_CustomRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestCustom/verify_CustomRes_embeds_CORS_headers_in_the_response_headers (0.00s)
-=== RUN   TestEmpty
-=== RUN   TestEmpty/verify_EmptyRes_returns_the_correct_status_code
-=== RUN   TestEmpty/verify_EmptyRes_embeds_CORS_headers_in_the_response_headers
---- PASS: TestEmpty (0.00s)
-    --- PASS: TestEmpty/verify_EmptyRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestEmpty/verify_EmptyRes_embeds_CORS_headers_in_the_response_headers (0.00s)
-=== RUN   TestError
-=== RUN   TestError/Handle_an_ErrorAndStatusRes
-=== RUN   TestError/Handle_an_ErrorAndStatusRes_when_ExposeServerErrors_is_true
-=== RUN   TestError/Handle_an_ErrorAndStatusRes_when_ExposeServerErrors_is_false
-=== RUN   TestError/Handle_a_general_error_when_ExposeServerErrors_is_true
-=== RUN   TestError/Handle_a_general_error_when_ExposeServerErrors_is_false
---- PASS: TestError (0.00s)
-    --- PASS: TestError/Handle_an_ErrorAndStatusRes (0.00s)
-    --- PASS: TestError/Handle_an_ErrorAndStatusRes_when_ExposeServerErrors_is_true (0.00s)
-    --- PASS: TestError/Handle_an_ErrorAndStatusRes_when_ExposeServerErrors_is_false (0.00s)
-    --- PASS: TestError/Handle_a_general_error_when_ExposeServerErrors_is_true (0.00s)
-    --- PASS: TestError/Handle_a_general_error_when_ExposeServerErrors_is_false (0.00s)
-=== RUN   TestErrorAndStatus
-=== RUN   TestErrorAndStatus/verify_ErrorAndStatusRes_returns_the_correct_status_code
-=== RUN   TestErrorAndStatus/verify_ErrorAndStatusRes_embeds_CORS_headers_in_the_response
---- PASS: TestErrorAndStatus (0.00s)
-    --- PASS: TestErrorAndStatus/verify_ErrorAndStatusRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestErrorAndStatus/verify_ErrorAndStatusRes_embeds_CORS_headers_in_the_response (0.00s)
-=== RUN   TestFile
-=== RUN   TestFile/verify_FileRes_returns_the_correct_status_code
-=== RUN   TestFile/verify_FileRes_marks_the_response_as_NOT_base64_encoded
-=== RUN   TestFile/verify_FileRes_embeds_the_bytes_correctly_in_the_response_object_as_a_string
-=== RUN   TestFile/verify_FileRes_preserves_the_original_header_values
---- PASS: TestFile (0.00s)
-    --- PASS: TestFile/verify_FileRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestFile/verify_FileRes_marks_the_response_as_NOT_base64_encoded (0.00s)
-    --- PASS: TestFile/verify_FileRes_embeds_the_bytes_correctly_in_the_response_object_as_a_string (0.00s)
-    --- PASS: TestFile/verify_FileRes_preserves_the_original_header_values (0.00s)
-=== RUN   TestFileB64
-=== RUN   TestFileB64/verify_FileB64Res_returns_the_correct_status_code
-=== RUN   TestFileB64/verify_FileB64Res_marks_the_response_as_base64_encoded
-=== RUN   TestFileB64/verify_FileB64Res_embeds_the_bytes_correctly_in_the_response_object_as_a_byte64_encoded_string
-=== RUN   TestFileB64/verify_FileRes_preserves_the_original_header_values
---- PASS: TestFileB64 (0.00s)
-    --- PASS: TestFileB64/verify_FileB64Res_returns_the_correct_status_code (0.00s)
-    --- PASS: TestFileB64/verify_FileB64Res_marks_the_response_as_base64_encoded (0.00s)
-    --- PASS: TestFileB64/verify_FileB64Res_embeds_the_bytes_correctly_in_the_response_object_as_a_byte64_encoded_string (0.00s)
-    --- PASS: TestFileB64/verify_FileRes_preserves_the_original_header_values (0.00s)
-=== RUN   TestSuccess
-=== RUN   TestSuccess/verify_SuccessRes_returns_the_correct_status_code
-=== RUN   TestSuccess/verify_SuccessRes_returns_the_struct_in_the_response_body
---- PASS: TestSuccess (0.00s)
-    --- PASS: TestSuccess/verify_SuccessRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestSuccess/verify_SuccessRes_returns_the_struct_in_the_response_body (0.00s)
+=== RUN   TestCustomRes
+=== RUN   TestCustomRes/verify_CustomRes_returns_the_struct_in_the_response_body
+=== RUN   TestCustomRes/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers
+=== RUN   TestCustomRes/verify_CustomRes_returns_the_correct_status_code
+=== RUN   TestCustomRes/verify_CustomRes_embeds_CORS_headers_in_the_response_headers
+--- PASS: TestCustomRes (0.00s)
+    --- PASS: TestCustomRes/verify_CustomRes_returns_the_struct_in_the_response_body (0.00s)
+    --- PASS: TestCustomRes/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers (0.00s)
+    --- PASS: TestCustomRes/verify_CustomRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestCustomRes/verify_CustomRes_embeds_CORS_headers_in_the_response_headers (0.00s)
+=== RUN   TestEmptyRes
+=== RUN   TestEmptyRes/verify_EmptyRes_returns_the_correct_status_code
+=== RUN   TestEmptyRes/verify_EmptyRes_embeds_CORS_headers_in_the_response_headers
+--- PASS: TestEmptyRes (0.00s)
+    --- PASS: TestEmptyRes/verify_EmptyRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestEmptyRes/verify_EmptyRes_embeds_CORS_headers_in_the_response_headers (0.00s)
+=== RUN   TestErrorRes
+=== RUN   TestErrorRes/Handle_an_StatusAndErrorRes
+=== RUN   TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_true
+=== RUN   TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_false
+=== RUN   TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_true
+=== RUN   TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_false
+--- PASS: TestErrorRes (0.00s)
+    --- PASS: TestErrorRes/Handle_an_StatusAndErrorRes (0.00s)
+    --- PASS: TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_true (0.00s)
+    --- PASS: TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_false (0.00s)
+    --- PASS: TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_true (0.00s)
+    --- PASS: TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_false (0.00s)
+=== RUN   TestFileRes
+=== RUN   TestFileRes/verify_FileRes_returns_the_correct_status_code
+=== RUN   TestFileRes/verify_FileRes_marks_the_response_as_NOT_base64_encoded
+=== RUN   TestFileRes/verify_FileRes_embeds_the_bytes_correctly_in_the_response_object_as_a_string
+=== RUN   TestFileRes/verify_FileRes_preserves_the_original_header_values
+--- PASS: TestFileRes (0.00s)
+    --- PASS: TestFileRes/verify_FileRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestFileRes/verify_FileRes_marks_the_response_as_NOT_base64_encoded (0.00s)
+    --- PASS: TestFileRes/verify_FileRes_embeds_the_bytes_correctly_in_the_response_object_as_a_string (0.00s)
+    --- PASS: TestFileRes/verify_FileRes_preserves_the_original_header_values (0.00s)
+=== RUN   TestFileB64Res
+=== RUN   TestFileB64Res/verify_FileB64Res_returns_the_correct_status_code
+=== RUN   TestFileB64Res/verify_FileB64Res_marks_the_response_as_base64_encoded
+=== RUN   TestFileB64Res/verify_FileB64Res_embeds_the_bytes_correctly_in_the_response_object_as_a_byte64_encoded_string
+=== RUN   TestFileB64Res/verify_FileRes_preserves_the_original_header_values
+--- PASS: TestFileB64Res (0.00s)
+    --- PASS: TestFileB64Res/verify_FileB64Res_returns_the_correct_status_code (0.00s)
+    --- PASS: TestFileB64Res/verify_FileB64Res_marks_the_response_as_base64_encoded (0.00s)
+    --- PASS: TestFileB64Res/verify_FileB64Res_embeds_the_bytes_correctly_in_the_response_object_as_a_byte64_encoded_string (0.00s)
+    --- PASS: TestFileB64Res/verify_FileRes_preserves_the_original_header_values (0.00s)
+=== RUN   TestStatusAndErrorRes
+=== RUN   TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_the_correct_status_code
+=== RUN   TestStatusAndErrorRes/verify_StatusAndErrorRes_embeds_CORS_headers_in_the_response
+--- PASS: TestStatusAndErrorRes (0.00s)
+    --- PASS: TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestStatusAndErrorRes/verify_StatusAndErrorRes_embeds_CORS_headers_in_the_response (0.00s)
+=== RUN   TestSuccessRes
+=== RUN   TestSuccessRes/verify_SuccessRes_returns_the_correct_status_code
+=== RUN   TestSuccessRes/verify_SuccessRes_returns_the_struct_in_the_response_body
+--- PASS: TestSuccessRes (0.00s)
+    --- PASS: TestSuccessRes/verify_SuccessRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestSuccessRes/verify_SuccessRes_returns_the_struct_in_the_response_body (0.00s)
 === RUN   TestRouter
 === RUN   TestRouter/Routes_created_correctly
 === RUN   TestRouter/Routes_created_correctly//

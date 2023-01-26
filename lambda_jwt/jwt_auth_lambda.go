@@ -43,13 +43,13 @@ func DecodeStandard(next lambda_router.Handler) lambda_router.Handler {
 	) {
 		mapClaims, httpStatus, err := ExtractJWT(req.Headers)
 		if err != nil {
-			return lambda_router.ErrorAndStatusRes(httpStatus, err)
+			return lambda_router.StatusAndErrorRes(httpStatus, err)
 		}
 
 		var standardClaims jwt.StandardClaims
 		err = ExtractStandard(mapClaims, &standardClaims)
 		if err != nil {
-			return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, err)
+			return lambda_router.StatusAndErrorRes(http.StatusInternalServerError, err)
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, standardClaims.Audience)
@@ -76,13 +76,13 @@ func DecodeExpanded(next lambda_router.Handler) lambda_router.Handler {
 	) {
 		mapClaims, httpStatus, err := ExtractJWT(req.Headers)
 		if err != nil {
-			return lambda_router.ErrorAndStatusRes(httpStatus, err)
+			return lambda_router.StatusAndErrorRes(httpStatus, err)
 		}
 
 		var extendedClaims ExpandedClaims
 		err = ExtractCustom(mapClaims, &extendedClaims)
 		if err != nil {
-			return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, err)
+			return lambda_router.StatusAndErrorRes(http.StatusInternalServerError, err)
 		}
 
 		ctx = context.WithValue(ctx, AudienceKey, extendedClaims.Audience)
@@ -130,7 +130,7 @@ func GenerateEmptyErrorHandler() lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		events.APIGatewayProxyResponse,
 		error) {
-		return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, errors.New("this error is simulated"))
+		return lambda_router.StatusAndErrorRes(http.StatusInternalServerError, errors.New("this error is simulated"))
 	}
 }
 
