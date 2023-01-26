@@ -64,6 +64,14 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
     --- PASS: TestExtractJWT/verify_ExtractJWT_returns_err_for_BEARER_all_caps (0.00s)
     --- PASS: TestExtractJWT/verify_ExtractJWT_returns_err_for_Bearer_does_not_end_with_space (0.00s)
     --- PASS: TestExtractJWT/verify_ExtractJWT_returns_claims_correctly_with_valid_input (0.00s)
+=== RUN   TestGenerateEmptyErrorHandler
+=== RUN   TestGenerateEmptyErrorHandler/verify_empty_error_handler_returns_error
+--- PASS: TestGenerateEmptyErrorHandler (0.00s)
+    --- PASS: TestGenerateEmptyErrorHandler/verify_empty_error_handler_returns_error (0.00s)
+=== RUN   TestGenerateEmptySuccessHandler
+=== RUN   TestGenerateEmptySuccessHandler/verify_empty_success_handler_returns_success
+--- PASS: TestGenerateEmptySuccessHandler (0.00s)
+    --- PASS: TestGenerateEmptySuccessHandler/verify_empty_success_handler_returns_success (0.00s)
 === RUN   TestExtendExpandedClaims
 === RUN   TestExtendExpandedClaims/verify_sign_and_verify_expanded_and_custom_fields_in_claims
 --- PASS: TestExtendExpandedClaims (0.00s)
@@ -219,7 +227,6 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.004s
         --- PASS: TestRouter/Reqs_execute_correctly/GET_/api (0.00s)
     --- PASS: TestRouter/Overlapping_routes (0.00s)
 PASS
-ok  	github.com/seantcanavan/lambda_jwt_router/lambda_router	0.003s
-?   	github.com/seantcanavan/lambda_jwt_router/util	[no test files]
-
+ok  	github.com/seantcanavan/lambda_jwt_router/lambda_router	0.004s
+?   	github.com/seantcanavan/lambda_jwt_router/lambda_util	[no test files]
 ```

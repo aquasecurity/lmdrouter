@@ -60,8 +60,7 @@ func DecodeStandard(next lambda_router.Handler) lambda_router.Handler {
 		ctx = context.WithValue(ctx, NotBeforeKey, standardClaims.NotBefore)
 		ctx = context.WithValue(ctx, SubjectKey, standardClaims.Subject)
 
-		res, err = next(ctx, req)
-		return res, err
+		return next(ctx, req)
 	}
 }
 
@@ -99,8 +98,7 @@ func DecodeExpanded(next lambda_router.Handler) lambda_router.Handler {
 		ctx = context.WithValue(ctx, SubjectKey, extendedClaims.Subject)
 		ctx = context.WithValue(ctx, UserTypeKey, extendedClaims.UserType)
 
-		res, err = next(ctx, req)
-		return res, err
+		return next(ctx, req)
 	}
 }
 
@@ -126,6 +124,22 @@ func ExtractJWT(headers map[string]string) (jwt.MapClaims, int, error) {
 	}
 
 	return mapClaims, http.StatusOK, nil
+}
+
+func GenerateEmptyErrorHandler() lambda_router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		events.APIGatewayProxyResponse,
+		error) {
+		return lambda_router.ErrorAndStatusRes(http.StatusInternalServerError, errors.New("this error is simulated"))
+	}
+}
+
+func GenerateEmptySuccessHandler() lambda_router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		events.APIGatewayProxyResponse,
+		error) {
+		return lambda_router.EmptyRes()
+	}
 }
 
 // LogRequestMW is a standard middleware function that will log every incoming
