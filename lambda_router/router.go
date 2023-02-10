@@ -216,7 +216,26 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 		},
 	}
 
+	r.methods["OPTIONS"] = resource{
+		handler: l.getOptionsHandler(),
+		hasMiddleware: hasMiddleware{
+			middleware: middleware,
+		},
+	}
+
 	l.routes[path] = r
+}
+
+func (l *Router) getOptionsHandler() Handler {
+	return func(context.Context, events.APIGatewayProxyRequest) (
+		events.APIGatewayProxyResponse,
+		error,
+	) {
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusOK,
+			Body:       "Blanket CORS req",
+		}, nil
+	}
 }
 
 // Handler receives a context and an API Gateway Proxy req, and handles the
