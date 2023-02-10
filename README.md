@@ -147,56 +147,70 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
 === RUN   TestCustomRes/verify_CustomRes_returns_the_struct_in_the_response_body
 === RUN   TestCustomRes/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers
 === RUN   TestCustomRes/verify_CustomRes_returns_the_correct_status_code
+=== RUN   TestCustomRes/verify_CustomRes_returns_CORS_headers
 --- PASS: TestCustomRes (0.00s)
     --- PASS: TestCustomRes/verify_CustomRes_returns_the_struct_in_the_response_body (0.00s)
     --- PASS: TestCustomRes/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers (0.00s)
     --- PASS: TestCustomRes/verify_CustomRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestCustomRes/verify_CustomRes_returns_CORS_headers (0.00s)
 === RUN   TestEmptyRes
 === RUN   TestEmptyRes/verify_EmptyRes_returns_the_correct_status_code
+=== RUN   TestEmptyRes/verify_EmptyRes_returns_CORS_headers
 --- PASS: TestEmptyRes (0.00s)
     --- PASS: TestEmptyRes/verify_EmptyRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestEmptyRes/verify_EmptyRes_returns_CORS_headers (0.00s)
 === RUN   TestErrorRes
-=== RUN   TestErrorRes/Handle_an_StatusAndErrorRes
-=== RUN   TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_true
-=== RUN   TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_false
-=== RUN   TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_true
-=== RUN   TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_false
+=== RUN   TestErrorRes/Handle_an_HTTPError_ErrorRes_without_ExposeServerErrors_set_and_verify_CORS
+=== RUN   TestErrorRes/Handle_an_HTTPError_ErrorRes_without_ExposeServerErrors_set_and_verify_CORS/verify_ErrorRes_returns_CORS_headers
+=== RUN   TestErrorRes/Handle_an_HTTPError_for_ErrorRes_when_ExposeServerErrors_is_true
+=== RUN   TestErrorRes/Handle_an_HTTPError_for_ErrorRes_when_ExposeServerErrors_is_false
+=== RUN   TestErrorRes/Handle_a_general_error_for_ErrorRes_when_ExposeServerErrors_is_true
+=== RUN   TestErrorRes/Handle_a_general_error_for_ErrorRes_when_ExposeServerErrors_is_false
 --- PASS: TestErrorRes (0.00s)
-    --- PASS: TestErrorRes/Handle_an_StatusAndErrorRes (0.00s)
-    --- PASS: TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_true (0.00s)
-    --- PASS: TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_false (0.00s)
-    --- PASS: TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_true (0.00s)
-    --- PASS: TestErrorRes/Handle_a_general_error_when_ExposeServerErrors_is_false (0.00s)
+    --- PASS: TestErrorRes/Handle_an_HTTPError_ErrorRes_without_ExposeServerErrors_set_and_verify_CORS (0.00s)
+        --- PASS: TestErrorRes/Handle_an_HTTPError_ErrorRes_without_ExposeServerErrors_set_and_verify_CORS/verify_ErrorRes_returns_CORS_headers (0.00s)
+    --- PASS: TestErrorRes/Handle_an_HTTPError_for_ErrorRes_when_ExposeServerErrors_is_true (0.00s)
+    --- PASS: TestErrorRes/Handle_an_HTTPError_for_ErrorRes_when_ExposeServerErrors_is_false (0.00s)
+    --- PASS: TestErrorRes/Handle_a_general_error_for_ErrorRes_when_ExposeServerErrors_is_true (0.00s)
+    --- PASS: TestErrorRes/Handle_a_general_error_for_ErrorRes_when_ExposeServerErrors_is_false (0.00s)
 === RUN   TestFileRes
 === RUN   TestFileRes/verify_FileRes_returns_the_correct_status_code
 === RUN   TestFileRes/verify_FileRes_marks_the_response_as_NOT_base64_encoded
 === RUN   TestFileRes/verify_FileRes_embeds_the_bytes_correctly_in_the_response_object_as_a_string
 === RUN   TestFileRes/verify_FileRes_preserves_the_original_header_values
+=== RUN   TestFileRes/verify_FileRes_returns_CORS_headers
 --- PASS: TestFileRes (0.00s)
     --- PASS: TestFileRes/verify_FileRes_returns_the_correct_status_code (0.00s)
     --- PASS: TestFileRes/verify_FileRes_marks_the_response_as_NOT_base64_encoded (0.00s)
     --- PASS: TestFileRes/verify_FileRes_embeds_the_bytes_correctly_in_the_response_object_as_a_string (0.00s)
     --- PASS: TestFileRes/verify_FileRes_preserves_the_original_header_values (0.00s)
+    --- PASS: TestFileRes/verify_FileRes_returns_CORS_headers (0.00s)
 === RUN   TestFileB64Res
 === RUN   TestFileB64Res/verify_FileB64Res_returns_the_correct_status_code
 === RUN   TestFileB64Res/verify_FileB64Res_marks_the_response_as_base64_encoded
 === RUN   TestFileB64Res/verify_FileB64Res_embeds_the_bytes_correctly_in_the_response_object_as_a_byte64_encoded_string
 === RUN   TestFileB64Res/verify_FileRes_preserves_the_original_header_values
+=== RUN   TestFileB64Res/verify_FileB64Res_returns_CORS_headers
 --- PASS: TestFileB64Res (0.00s)
     --- PASS: TestFileB64Res/verify_FileB64Res_returns_the_correct_status_code (0.00s)
     --- PASS: TestFileB64Res/verify_FileB64Res_marks_the_response_as_base64_encoded (0.00s)
     --- PASS: TestFileB64Res/verify_FileB64Res_embeds_the_bytes_correctly_in_the_response_object_as_a_byte64_encoded_string (0.00s)
     --- PASS: TestFileB64Res/verify_FileRes_preserves_the_original_header_values (0.00s)
+    --- PASS: TestFileB64Res/verify_FileB64Res_returns_CORS_headers (0.00s)
 === RUN   TestStatusAndErrorRes
 === RUN   TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_the_correct_status_code
+=== RUN   TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_CORS_headers
 --- PASS: TestStatusAndErrorRes (0.00s)
     --- PASS: TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_the_correct_status_code (0.00s)
+    --- PASS: TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_CORS_headers (0.00s)
 === RUN   TestSuccessRes
 === RUN   TestSuccessRes/verify_SuccessRes_returns_the_correct_status_code
 === RUN   TestSuccessRes/verify_SuccessRes_returns_the_struct_in_the_response_body
+=== RUN   TestSuccessRes/verify_SuccessRes_returns_CORS_headers
 --- PASS: TestSuccessRes (0.00s)
     --- PASS: TestSuccessRes/verify_SuccessRes_returns_the_correct_status_code (0.00s)
     --- PASS: TestSuccessRes/verify_SuccessRes_returns_the_struct_in_the_response_body (0.00s)
+    --- PASS: TestSuccessRes/verify_SuccessRes_returns_CORS_headers (0.00s)
 === RUN   TestRouter
 === RUN   TestRouter/Routes_created_correctly
 === RUN   TestRouter/Routes_created_correctly//

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
 	"net/http"
+	"os"
 )
 
 // ExposeServerErrors is a boolean indicating whether the ErrorRes function
@@ -38,7 +39,7 @@ func CustomRes(httpStatus int, headers map[string]string, data interface{}) (
 	return events.APIGatewayProxyResponse{
 		StatusCode:      httpStatus,
 		IsBase64Encoded: false,
-		Headers:         headers,
+		Headers:         addCors(headers),
 		Body:            string(b),
 	}, nil
 }
@@ -85,7 +86,7 @@ func FileRes(contentType string, headers map[string]string, fileBytes []byte) (e
 
 	return events.APIGatewayProxyResponse{
 		StatusCode:      http.StatusOK,
-		Headers:         headers,
+		Headers:         addCors(headers),
 		Body:            string(fileBytes),
 		IsBase64Encoded: false,
 	}, nil
@@ -104,7 +105,7 @@ func FileB64Res(contentType string, headers map[string]string, fileBytes []byte)
 
 	return events.APIGatewayProxyResponse{
 		StatusCode:      http.StatusOK,
-		Headers:         headers,
+		Headers:         addCors(headers),
 		Body:            base64.StdEncoding.EncodeToString(fileBytes),
 		IsBase64Encoded: true,
 	}, nil
@@ -143,4 +144,29 @@ type HTTPError struct {
 // Error returns a string representation of the HTTPError instance.
 func (err HTTPError) Error() string {
 	return fmt.Sprintf("error %d: %s", err.Status, err.Message)
+}
+
+// addCors injects CORS Origin and CORS Methods headers into the response object before it's returned.
+func addCors(headers map[string]string) map[string]string {
+	corsHeaders := os.Getenv("LAMBDA_JWT_ROUTER_CORS_HEADERS")
+	corsMethods := os.Getenv("LAMBDA_JWT_ROUTER_CORS_METHODS")
+	corsOrigins := os.Getenv("LAMBDA_JWT_ROUTER_CORS_ORIGIN")
+
+	if corsHeaders == "" {
+		corsHeaders = "*"
+	}
+
+	if corsMethods == "" {
+		corsMethods = "*"
+	}
+
+	if corsOrigins == "" {
+		corsOrigins = "*"
+	}
+
+	headers[CORSHeadersKey] = corsHeaders
+	headers[CORSMethodsKey] = corsMethods
+	headers[CORSOriginKey] = corsOrigins
+
+	return headers
 }

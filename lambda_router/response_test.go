@@ -39,6 +39,11 @@ func TestCustomRes(t *testing.T) {
 	t.Run("verify CustomRes returns the correct status code", func(t *testing.T) {
 		assert.Equal(t, httpStatus, res.StatusCode)
 	})
+	t.Run("verify CustomRes returns CORS headers", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+	})
 }
 
 func TestEmptyRes(t *testing.T) {
@@ -50,18 +55,28 @@ func TestEmptyRes(t *testing.T) {
 	t.Run("verify EmptyRes returns the correct status code", func(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
+	t.Run("verify EmptyRes returns CORS headers", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+	})
 }
 
 func TestErrorRes(t *testing.T) {
-	t.Run("Handle an StatusAndErrorRes", func(t *testing.T) {
+	t.Run("Handle an HTTPError ErrorRes without ExposeServerErrors set and verify CORS", func(t *testing.T) {
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: "Invalid input",
 		})
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "status status must be correct")
 		assert.Equal(t, `{"status":400,"message":"Invalid input"}`, res.Body, "body must be correct")
+		t.Run("verify ErrorRes returns CORS headers", func(t *testing.T) {
+			assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+			assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+			assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		})
 	})
-	t.Run("Handle an StatusAndErrorRes when ExposeServerErrors is true", func(t *testing.T) {
+	t.Run("Handle an HTTPError for ErrorRes when ExposeServerErrors is true", func(t *testing.T) {
 		ExposeServerErrors = true
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusInternalServerError,
@@ -70,7 +85,7 @@ func TestErrorRes(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
 		assert.Equal(t, `{"status":500,"message":"database down"}`, res.Body, "body must be correct")
 	})
-	t.Run("Handle an StatusAndErrorRes when ExposeServerErrors is false", func(t *testing.T) {
+	t.Run("Handle an HTTPError for ErrorRes when ExposeServerErrors is false", func(t *testing.T) {
 		ExposeServerErrors = false
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusInternalServerError,
@@ -79,13 +94,13 @@ func TestErrorRes(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
 		assert.Equal(t, `{"status":500,"message":"Internal Server Error"}`, res.Body, "body must be correct")
 	})
-	t.Run("Handle a general error when ExposeServerErrors is true", func(t *testing.T) {
+	t.Run("Handle a general error for ErrorRes when ExposeServerErrors is true", func(t *testing.T) {
 		ExposeServerErrors = true
 		res, _ := ErrorRes(errors.New("database down"))
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
 		assert.Equal(t, `{"status":500,"message":"database down"}`, res.Body, "body must be correct")
 	})
-	t.Run("Handle a general error when ExposeServerErrors is false", func(t *testing.T) {
+	t.Run("Handle a general error for ErrorRes when ExposeServerErrors is false", func(t *testing.T) {
 		ExposeServerErrors = false
 		res, _ := ErrorRes(errors.New("database down"))
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode, "status must be correct")
@@ -113,6 +128,11 @@ value1, value2
 	t.Run("verify FileRes preserves the original header values", func(t *testing.T) {
 		assert.Equal(t, "value", res.Headers["key"])
 	})
+	t.Run("verify FileRes returns CORS headers", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+	})
 }
 
 func TestFileB64Res(t *testing.T) {
@@ -138,7 +158,11 @@ value1, value2
 	})
 	t.Run("verify FileRes preserves the original header values", func(t *testing.T) {
 		assert.Equal(t, "value", res.Headers["key"])
-
+	})
+	t.Run("verify FileB64Res returns CORS headers", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
 	})
 }
 
@@ -149,6 +173,11 @@ func TestStatusAndErrorRes(t *testing.T) {
 
 	t.Run("verify StatusAndErrorRes returns the correct status code", func(t *testing.T) {
 		assert.Equal(t, http.StatusTeapot, res.StatusCode)
+	})
+	t.Run("verify StatusAndErrorRes returns CORS headers", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
 	})
 }
 
@@ -164,5 +193,10 @@ func TestSuccessRes(t *testing.T) {
 		unmarshalErr := UnmarshalRes(res, &returnedStruct)
 		assert.Nil(t, unmarshalErr)
 		assert.Equal(t, cs, returnedStruct)
+	})
+	t.Run("verify SuccessRes returns CORS headers", func(t *testing.T) {
+		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginKey], "*")
 	})
 }
