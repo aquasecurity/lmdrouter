@@ -17,11 +17,16 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
 
 ## How to Use
 1. set the environment variable `LAMBDA_JWT_ROUTER_NO_CORS=true` to disable adding a CORS OPTIONS handler to every route automatically
+   1. If you do not set it manually - the default value will be `*`
 2. set the environment variable `LAMBDA_JWT_ROUTER_CORS_METHODS` to configure which CORS methods you would like to support
+   1. If you do not set it manually - the default value will be `*`
 3. set the environment variable `LAMBDA_JWT_ROUTER_CORS_ORIGIN` to configure which CORS origins you would like to support
-4. set the environment variable `LAMBDA_JWT_ROUTER_HMAC_SECRET` to configure the HMAC secret used to encode/decode JWTs
-5. See https://github.com/aquasecurity/lmdrouter for the original README and details
-6. More TBD coming on how to better utilize the changes I have made
+   1. If you do not set it manually - the default value will be `*`
+4. set the environment variable `LAMBDA_JWT_ROUTER_CORS_HEADERS` to configure which CORS headers you would like to support
+   1. If you do not set it manually - the default value will be `*`
+5. set the environment variable `LAMBDA_JWT_ROUTER_HMAC_SECRET` to configure the HMAC secret used to encode/decode JWTs
+6. See https://github.com/aquasecurity/lmdrouter for the original README and details
+7. More TBD coming on how to better utilize the changes I have made
 
 ## Sample routing example
 
@@ -142,18 +147,14 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
 === RUN   TestCustomRes/verify_CustomRes_returns_the_struct_in_the_response_body
 === RUN   TestCustomRes/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers
 === RUN   TestCustomRes/verify_CustomRes_returns_the_correct_status_code
-=== RUN   TestCustomRes/verify_CustomRes_embeds_CORS_headers_in_the_response_headers
 --- PASS: TestCustomRes (0.00s)
     --- PASS: TestCustomRes/verify_CustomRes_returns_the_struct_in_the_response_body (0.00s)
     --- PASS: TestCustomRes/verify_CustomRes_returns_the_key_value_pair_in_the_response_headers (0.00s)
     --- PASS: TestCustomRes/verify_CustomRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestCustomRes/verify_CustomRes_embeds_CORS_headers_in_the_response_headers (0.00s)
 === RUN   TestEmptyRes
 === RUN   TestEmptyRes/verify_EmptyRes_returns_the_correct_status_code
-=== RUN   TestEmptyRes/verify_EmptyRes_embeds_CORS_headers_in_the_response_headers
 --- PASS: TestEmptyRes (0.00s)
     --- PASS: TestEmptyRes/verify_EmptyRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestEmptyRes/verify_EmptyRes_embeds_CORS_headers_in_the_response_headers (0.00s)
 === RUN   TestErrorRes
 === RUN   TestErrorRes/Handle_an_StatusAndErrorRes
 === RUN   TestErrorRes/Handle_an_StatusAndErrorRes_when_ExposeServerErrors_is_true
@@ -188,10 +189,8 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
     --- PASS: TestFileB64Res/verify_FileRes_preserves_the_original_header_values (0.00s)
 === RUN   TestStatusAndErrorRes
 === RUN   TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_the_correct_status_code
-=== RUN   TestStatusAndErrorRes/verify_StatusAndErrorRes_embeds_CORS_headers_in_the_response
 --- PASS: TestStatusAndErrorRes (0.00s)
     --- PASS: TestStatusAndErrorRes/verify_StatusAndErrorRes_returns_the_correct_status_code (0.00s)
-    --- PASS: TestStatusAndErrorRes/verify_StatusAndErrorRes_embeds_CORS_headers_in_the_response (0.00s)
 === RUN   TestSuccessRes
 === RUN   TestSuccessRes/verify_SuccessRes_returns_the_correct_status_code
 === RUN   TestSuccessRes/verify_SuccessRes_returns_the_struct_in_the_response_body

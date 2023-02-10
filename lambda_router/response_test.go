@@ -39,11 +39,6 @@ func TestCustomRes(t *testing.T) {
 	t.Run("verify CustomRes returns the correct status code", func(t *testing.T) {
 		assert.Equal(t, httpStatus, res.StatusCode)
 	})
-	//t.Run("verify CustomRes embeds CORS headers in the response headers", func(t *testing.T) {
-	//	assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-	//	assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-	//	assert.Equal(t, res.Headers[CORSOriginKey], "*")
-	//})
 }
 
 func TestEmptyRes(t *testing.T) {
@@ -55,11 +50,6 @@ func TestEmptyRes(t *testing.T) {
 	t.Run("verify EmptyRes returns the correct status code", func(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
-	t.Run("verify EmptyRes embeds CORS headers in the response headers", func(t *testing.T) {
-		//assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		//assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		//assert.Equal(t, res.Headers[CORSOriginKey], "*")
-	})
 }
 
 func TestErrorRes(t *testing.T) {
@@ -70,9 +60,6 @@ func TestErrorRes(t *testing.T) {
 		})
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "status status must be correct")
 		assert.Equal(t, `{"status":400,"message":"Invalid input"}`, res.Body, "body must be correct")
-		//assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		//assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		//assert.Equal(t, res.Headers[CORSOriginKey], "*")
 	})
 	t.Run("Handle an StatusAndErrorRes when ExposeServerErrors is true", func(t *testing.T) {
 		ExposeServerErrors = true
@@ -162,11 +149,6 @@ func TestStatusAndErrorRes(t *testing.T) {
 
 	t.Run("verify StatusAndErrorRes returns the correct status code", func(t *testing.T) {
 		assert.Equal(t, http.StatusTeapot, res.StatusCode)
-	})
-	t.Run("verify StatusAndErrorRes embeds CORS headers in the response", func(t *testing.T) {
-		//assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		//assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		//assert.Equal(t, res.Headers[CORSOriginKey], "*")
 	})
 }
 

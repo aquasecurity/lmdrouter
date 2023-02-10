@@ -12,6 +12,11 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
+const ContentTypeKey = "Content-Type"
+const CORSHeadersKey = "Access-Control-Allow-Headers"
+const CORSMethodsKey = "Access-Control-Allow-Methods"
+const CORSOriginKey = "Access-Control-Allow-Origin"
+
 // ServerHTTP implements the net/http.Handler interface in order to allow
 // lmdrouter applications to be used outside of AWS Lambda environments, most
 // likely for local development purposes
@@ -22,25 +27,29 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.URL.Query(),
 	)
 
+	corsHeaders := os.Getenv("LAMBDA_JWT_ROUTER_CORS_HEADERS")
 	corsMethods := os.Getenv("LAMBDA_JWT_ROUTER_CORS_METHODS")
 	corsOrigins := os.Getenv("LAMBDA_JWT_ROUTER_CORS_ORIGIN")
 
-	if len(corsMethods) == 0 {
+	if corsHeaders == "" {
+		corsHeaders = "*"
+	}
+
+	if corsMethods == "" {
 		corsMethods = "*"
 	}
 
-	if len(corsOrigins) == 0 {
+	if corsOrigins == "" {
 		corsOrigins = "*"
 	}
 
-	w.Header().Set("Access-Control-Allow-Headers", "*")
-	w.Header().Set("Access-Control-Allow-Methods", corsMethods)
-	w.Header().Set("Access-Control-Allow-Origin", corsOrigins)
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(CORSHeadersKey, "*")
+	w.Header().Set(CORSMethodsKey, corsMethods)
+	w.Header().Set(CORSOriginKey, corsOrigins)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.Header().Set(ContentTypeKey, "application/json; charset=UTF-8")
 		w.WriteHeader(500)
 		encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": fmt.Sprintf("Failed reading req body: %s", err),
@@ -63,7 +72,7 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	res, err := l.Handler(r.Context(), event)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.Header().Set(ContentTypeKey, "application/json; charset=UTF-8")
 		w.WriteHeader(500)
 		encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 			"error": fmt.Sprintf("Failed executing handler: %s", err),
@@ -78,7 +87,7 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if res.IsBase64Encoded {
 		resBody, err = base64.StdEncoding.DecodeString(res.Body)
 		if err != nil {
-			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.Header().Set(ContentTypeKey, "application/json; charset=UTF-8")
 			w.WriteHeader(500)
 			encodeErr := json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": fmt.Sprintf("Handler returned invalid base64 data: %s", err),

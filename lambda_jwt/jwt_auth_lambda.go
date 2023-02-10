@@ -23,7 +23,7 @@ func AllowOptionsMW(next lambda_router.Handler) lambda_router.Handler {
 		res events.APIGatewayProxyResponse,
 		err error,
 	) {
-		if req.HTTPMethod == "OPTIONS" { // immediately return success for options calls for CORS reqs
+		if req.HTTPMethod == http.MethodOptions { // immediately return success for options calls for CORS reqs
 			return lambda_router.EmptyRes()
 		}
 
