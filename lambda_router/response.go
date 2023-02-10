@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"os"
-
 	"github.com/aws/aws-lambda-go/events"
+	"net/http"
 )
 
 const ContentTypeKey = "Content-Type"
@@ -45,8 +43,9 @@ func CustomRes(httpStatus int, headers map[string]string, data interface{}) (
 	return events.APIGatewayProxyResponse{
 		StatusCode:      httpStatus,
 		IsBase64Encoded: false,
-		Headers:         addCors(headers),
-		Body:            string(b),
+		//Headers:         addCors(headers),
+		Headers: headers,
+		Body:    string(b),
 	}, nil
 }
 
@@ -91,8 +90,9 @@ func FileRes(contentType string, headers map[string]string, fileBytes []byte) (e
 	}
 
 	return events.APIGatewayProxyResponse{
-		StatusCode:      http.StatusOK,
-		Headers:         addCors(headers),
+		StatusCode: http.StatusOK,
+		//Headers:         addCors(headers),
+		Headers:         headers,
 		Body:            string(fileBytes),
 		IsBase64Encoded: false,
 	}, nil
@@ -110,8 +110,9 @@ func FileB64Res(contentType string, headers map[string]string, fileBytes []byte)
 	}
 
 	return events.APIGatewayProxyResponse{
-		StatusCode:      http.StatusOK,
-		Headers:         addCors(headers),
+		StatusCode: http.StatusOK,
+		//Headers:         addCors(headers),
+		Headers:         headers,
 		Body:            base64.StdEncoding.EncodeToString(fileBytes),
 		IsBase64Encoded: true,
 	}, nil
@@ -140,25 +141,26 @@ func SuccessRes(data interface{}) (events.APIGatewayProxyResponse, error) {
 	return CustomRes(http.StatusOK, nil, data)
 }
 
-// addCors injects CORS Origin and CORS Methods headers into the response object before it's returned.
-func addCors(headers map[string]string) map[string]string {
-	corsMethods := os.Getenv("CORS_METHODS")
-	corsOrigins := os.Getenv("CORS_ORIGIN")
-
-	if corsMethods == "" {
-		corsMethods = "*"
-	}
-
-	if corsOrigins == "" {
-		corsOrigins = "*"
-	}
-
-	headers[CORSHeadersKey] = "*"
-	headers[CORSMethodsKey] = corsMethods
-	headers[CORSOriginKey] = corsOrigins
-
-	return headers
-}
+//
+//// addCors injects CORS Origin and CORS Methods headers into the response object before it's returned.
+//func addCors(headers map[string]string) map[string]string {
+//	corsMethods := os.Getenv("LAMBDA_JWT_ROUTER_CORS_METHODS")
+//	corsOrigins := os.Getenv("LAMBDA_JWT_ROUTER_CORS_ORIGIN")
+//
+//	if corsMethods == "" {
+//		corsMethods = "*"
+//	}
+//
+//	if corsOrigins == "" {
+//		corsOrigins = "*"
+//	}
+//
+//	headers[CORSHeadersKey] = "*"
+//	headers[CORSMethodsKey] = corsMethods
+//	headers[CORSOriginKey] = corsOrigins
+//
+//	return headers
+//}
 
 // HTTPError is a generic struct type for JSON error responses. It allows the library
 // to assign an HTTP status code for the errors returned by its various functions.

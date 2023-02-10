@@ -93,7 +93,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		assert.Nil(t, err)
 
 		req := events.APIGatewayProxyRequest{
-			HTTPMethod: "GET",
+			HTTPMethod: http.MethodGet,
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},
@@ -153,7 +153,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		assert.Nil(t, err)
 
 		req := events.APIGatewayProxyRequest{
-			HTTPMethod: "GET",
+			HTTPMethod: http.MethodGet,
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},

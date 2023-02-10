@@ -16,7 +16,12 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
 1. `make test`
 
 ## How to Use
-1. TBD
+1. set the environment variable `LAMBDA_JWT_ROUTER_NO_CORS=true` to disable adding a CORS OPTIONS handler to every route automatically
+2. set the environment variable `LAMBDA_JWT_ROUTER_CORS_METHODS` to configure which CORS methods you would like to support
+3. set the environment variable `LAMBDA_JWT_ROUTER_CORS_ORIGIN` to configure which CORS origins you would like to support
+4. set the environment variable `LAMBDA_JWT_ROUTER_HMAC_SECRET` to configure the HMAC secret used to encode/decode JWTs
+5. See https://github.com/aquasecurity/lmdrouter for the original README and details
+6. More TBD coming on how to better utilize the changes I have made
 
 ## Sample routing example
 
