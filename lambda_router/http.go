@@ -22,8 +22,8 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.URL.Query(),
 	)
 
-	corsMethods := os.Getenv("CORS_METHODS")
-	corsOrigins := os.Getenv("CORS_ORIGIN")
+	corsMethods := os.Getenv("LAMBDA_JWT_ROUTER_CORS_METHODS")
+	corsOrigins := os.Getenv("LAMBDA_JWT_ROUTER_CORS_ORIGIN")
 
 	if len(corsMethods) == 0 {
 		corsMethods = "*"

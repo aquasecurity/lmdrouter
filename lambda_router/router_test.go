@@ -17,11 +17,11 @@ var testLog []string
 
 func TestRouter(t *testing.T) {
 	lmd := NewRouter("/api", logger)
-	lmd.Route("GET", "/", listSomethings)
-	lmd.Route("POST", "/", postSomething, auth)
-	lmd.Route("GET", "/:id", getSomething)
-	lmd.Route("GET", "/:id/stuff", listStuff)
-	lmd.Route("GET", "/:id/stuff/:fake", listStuff)
+	lmd.Route(http.MethodGet, "/", listSomethings)
+	lmd.Route(http.MethodPost, "/", postSomething, auth)
+	lmd.Route(http.MethodGet, "/:id", getSomething)
+	lmd.Route(http.MethodGet, "/:id/stuff", listStuff)
+	lmd.Route(http.MethodGet, "/:id/stuff/:fake", listStuff)
 
 	t.Run("Routes created correctly", func(t *testing.T) {
 		t.Run("/", func(t *testing.T) {
@@ -29,20 +29,20 @@ func TestRouter(t *testing.T) {
 			assert.True(t, ok, "Route must be created")
 			if ok {
 				assert.Equal(t, `^/api$`, route.re.String(), "Regex must be correct")
-				assert.NotEqual(t, nil, route.methods["GET"], "GET method must exist")
-				assert.NotEqual(t, nil, route.methods["POST"], "POST method must exist")
+				assert.NotEqual(t, nil, route.methods[http.MethodGet], "GET method must exist")
+				assert.NotEqual(t, nil, route.methods[http.MethodPost], "POST method must exist")
+				assert.NotEqual(t, nil, route.methods[http.MethodOptions], "OPTIONS method must exist") // auto generated for CORS support
 			}
 		})
-
 		t.Run("/:id", func(t *testing.T) {
 			route, ok := lmd.routes["/:id"]
 			assert.True(t, ok, "Route must be created")
 			if ok {
 				assert.Equal(t, `^/api/([^/]+)$`, route.re.String(), "Regex must be correct")
-				assert.NotEqual(t, nil, route.methods["GET"], "GET method must exist")
+				assert.NotEqual(t, nil, route.methods[http.MethodGet], "GET method must exist")
+				assert.NotEqual(t, nil, route.methods[http.MethodOptions], "OPTIONS method must exist") // auto generated for CORS support
 			}
 		})
-
 		t.Run("/:id/stuff/:fake", func(t *testing.T) {
 			route, ok := lmd.routes["/:id/stuff/:fake"]
 			assert.True(t, ok, "Route must be created")
@@ -66,7 +66,7 @@ func TestRouter(t *testing.T) {
 	t.Run("Reqs matched correctly", func(t *testing.T) {
 		t.Run("POST /api", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "POST",
+				HTTPMethod: http.MethodPost,
 				Path:       "/api",
 			}
 			_, err := lmd.matchReq(&req)
@@ -76,7 +76,7 @@ func TestRouter(t *testing.T) {
 		t.Run("POST /api/", func(t *testing.T) {
 			// make sure trailing slashes are removed
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "POST",
+				HTTPMethod: http.MethodPost,
 				Path:       "/api/",
 			}
 			_, err := lmd.matchReq(&req)
@@ -85,7 +85,7 @@ func TestRouter(t *testing.T) {
 
 		t.Run("DELETE /api", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "DELETE",
+				HTTPMethod: http.MethodDelete,
 				Path:       "/api",
 			}
 			_, err := lmd.matchReq(&req)
@@ -98,7 +98,7 @@ func TestRouter(t *testing.T) {
 
 		t.Run("GET /api/fake-id", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "GET",
+				HTTPMethod: http.MethodGet,
 				Path:       "/api/fake-id",
 			}
 			_, err := lmd.matchReq(&req)
@@ -108,7 +108,7 @@ func TestRouter(t *testing.T) {
 
 		t.Run("GET /api/fake-id/bla", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "GET",
+				HTTPMethod: http.MethodGet,
 				Path:       "/api/fake-id/bla",
 			}
 			_, err := lmd.matchReq(&req)
@@ -121,7 +121,7 @@ func TestRouter(t *testing.T) {
 
 		t.Run("GET /api/fake-id/stuff/faked-fake", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "GET",
+				HTTPMethod: http.MethodGet,
 				Path:       "/api/fake-id/stuff/faked-fake",
 			}
 			_, err := lmd.matchReq(&req)
@@ -134,7 +134,7 @@ func TestRouter(t *testing.T) {
 	t.Run("Reqs execute correctly", func(t *testing.T) {
 		t.Run("POST /api without auth", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "POST",
+				HTTPMethod: http.MethodPost,
 				Path:       "/api",
 			}
 			res, err := lmd.Handler(context.Background(), req)
@@ -151,7 +151,7 @@ func TestRouter(t *testing.T) {
 
 		t.Run("POST /api with auth", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "POST",
+				HTTPMethod: http.MethodPost,
 				Path:       "/api",
 				Headers: map[string]string{
 					"Authorization": "Bearer fake-token",
@@ -164,7 +164,7 @@ func TestRouter(t *testing.T) {
 
 		t.Run("GET /api", func(t *testing.T) {
 			req := events.APIGatewayProxyRequest{
-				HTTPMethod: "GET",
+				HTTPMethod: http.MethodGet,
 				Path:       "/api",
 			}
 			res, err := lmd.Handler(context.Background(), req)
@@ -183,7 +183,7 @@ func TestRouter(t *testing.T) {
 	t.Run("Overlapping routes", func(t *testing.T) {
 		router := NewRouter("")
 		router.Route(
-			"GET",
+			http.MethodGet,
 			"/foo/:id",
 			func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
 				res.Body = "/foo/:id"
@@ -191,7 +191,7 @@ func TestRouter(t *testing.T) {
 			},
 		)
 		router.Route(
-			"POST",
+			http.MethodPost,
 			"/foo/bar",
 			func(_ context.Context, _ events.APIGatewayProxyRequest) (res events.APIGatewayProxyResponse, err error) {
 				res.Body = "/foo/bar"
@@ -204,20 +204,20 @@ func TestRouter(t *testing.T) {
 		// sometimes we may match the route and sometimes not
 		for i := 1; i <= 10; i++ {
 			res, _ := router.Handler(context.Background(), events.APIGatewayProxyRequest{
-				HTTPMethod: "POST",
+				HTTPMethod: http.MethodPost,
 				Path:       "/foo/bar",
 			})
 			assert.Equal(t, "/foo/bar", res.Body, "req must match /foo/bar route")
 		}
 
 		res, _ := router.Handler(context.Background(), events.APIGatewayProxyRequest{
-			HTTPMethod: "DELETE",
+			HTTPMethod: http.MethodDelete,
 			Path:       "/foo/bar",
 		})
 		assert.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, "Status code must be 405")
 
 		res, _ = router.Handler(context.Background(), events.APIGatewayProxyRequest{
-			HTTPMethod: "GET",
+			HTTPMethod: http.MethodGet,
 			Path:       "/foo/bar2",
 		})
 		assert.Equal(t, "/foo/:id", res.Body, "Body must match")

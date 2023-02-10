@@ -171,7 +171,7 @@ func VerifyJWT(userJWT string) (jwt.MapClaims, error) {
 }
 
 func getBinarySecret() []byte {
-	secret := os.Getenv("HMAC_SECRET")
+	secret := os.Getenv("LAMBDA_JWT_ROUTER_HMAC_SECRET")
 	if secret == "" {
 		log.Fatalf("cannot encode / decode with an empty secret")
 	}

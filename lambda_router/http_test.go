@@ -12,11 +12,11 @@ import (
 
 func TestHTTPHandler(t *testing.T) {
 	lmd := NewRouter("/api", logger)
-	lmd.Route("GET", "/", listSomethings)
-	lmd.Route("POST", "/", postSomething, auth)
-	lmd.Route("GET", "/:id", getSomething)
-	lmd.Route("GET", "/:id/stuff", listStuff)
-	lmd.Route("GET", "/:id/stuff/:fake", listStuff)
+	lmd.Route(http.MethodGet, "/", listSomethings)
+	lmd.Route(http.MethodPost, "/", postSomething, auth)
+	lmd.Route(http.MethodGet, "/:id", getSomething)
+	lmd.Route(http.MethodGet, "/:id/stuff", listStuff)
+	lmd.Route(http.MethodGet, "/:id/stuff/:fake", listStuff)
 
 	ts := httptest.NewServer(http.HandlerFunc(lmd.ServeHTTP))
 
@@ -36,7 +36,7 @@ func TestHTTPHandler(t *testing.T) {
 
 	t.Run("POST /api with auth", func(t *testing.T) {
 		req, err := http.NewRequest(
-			"POST",
+			http.MethodPost,
 			ts.URL+"/api",
 			nil,
 		)
@@ -60,7 +60,7 @@ func TestHTTPHandler(t *testing.T) {
 
 	t.Run("GET /api/something/stuff", func(t *testing.T) {
 		req, _ := http.NewRequest(
-			"GET",
+			http.MethodGet,
 			ts.URL+"/api/something/stuff?terms=one&terms=two&terms=three",
 			nil,
 		)

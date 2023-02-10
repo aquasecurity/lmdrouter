@@ -64,6 +64,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
 
@@ -209,15 +210,22 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 		}
 	}
 
-	r.methods[method] = resource{
-		handler: handler,
-		hasMiddleware: hasMiddleware{
-			middleware: middleware,
-		},
+	// unless CORS is overridden - we place an options handler at the
+	// current route. If the new method/route is OPTIONS then the
+	// code after this will override it with a new OPTIONS handler. If
+	// this isn't an OPTIONS call, this will add support for CORS
+	// for that specific route. No middleware can be applied here
+	// for simplicity reasons as any middleware that performs
+	// authentication or authorization on the main route will also
+	// apply here and prevent the CORS request from succeeding.
+	if os.Getenv("LAMBDA_JWT_ROUTER_NO_CORS") != "true" {
+		r.methods[http.MethodOptions] = resource{
+			handler: l.getOptionsHandler(),
+		}
 	}
 
-	r.methods["OPTIONS"] = resource{
-		handler: l.getOptionsHandler(),
+	r.methods[method] = resource{
+		handler: handler,
 		hasMiddleware: hasMiddleware{
 			middleware: middleware,
 		},
@@ -253,11 +261,11 @@ func (l *Router) getOptionsHandler() Handler {
 //
 //     func init() {
 //         router = lmdrouter.NewRouter("/api", loggerMiddleware, authMiddleware)
-//         router.Route("GET", "/", listSomethings)
-//         router.Route("POST", "/", postSomething, someOtherMiddleware)
-//         router.Route("GET", "/:id", getSomething)
+//         router.Route(http.MethodGet, "/", listSomethings)
+//         router.Route(http.MethodPost, "/", postSomething, someOtherMiddleware)
+//         router.Route(http.MethodGet, "/:id", getSomething)
 //         router.Route("PUT", "/:id", updateSomething)
-//         router.Route("DELETE", "/:id", deleteSomething)
+//         router.Route(http.MethodDelete, "/:id", deleteSomething)
 //     }
 //
 //     func main() {
