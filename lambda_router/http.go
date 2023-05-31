@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
 )
@@ -64,6 +65,7 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Body:                            string(body),
 		HTTPMethod:                      r.Method,
 		Headers:                         singleValueHeaders,
+		IsBase64Encoded:                 strings.HasPrefix(r.Header.Get(ContentTypeKey), "multipart/form-data; boundary"),
 		MultiValueHeaders:               map[string][]string(r.Header),
 		MultiValueQueryStringParameters: map[string][]string(r.URL.Query()),
 		Path:                            r.URL.Path,
