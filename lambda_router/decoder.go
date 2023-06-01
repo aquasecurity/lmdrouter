@@ -52,24 +52,23 @@ func MarshalReq(input interface{}) events.APIGatewayProxyRequest {
 //
 // Example struct (no body):
 //
-//     type ListPostsInput struct {
-//         ID          uint64   `lambda:"path.id"`
-//         Page        uint64   `lambda:"query.page"`
-//         PageSize    uint64   `lambda:"query.page_size"`
-//         Search      string   `lambda:"query.search"`
-//         ShowDrafts  bool     `lambda:"query.show_hidden"`
-//         Languages   []string `lambda:"header.Accept-Language"`
-//     }
+//	type ListPostsInput struct {
+//	    ID          uint64   `lambda:"path.id"`
+//	    Page        uint64   `lambda:"query.page"`
+//	    PageSize    uint64   `lambda:"query.page_size"`
+//	    Search      string   `lambda:"query.search"`
+//	    ShowDrafts  bool     `lambda:"query.show_hidden"`
+//	    Languages   []string `lambda:"header.Accept-Language"`
+//	}
 //
 // Example struct (JSON body):
 //
-//     type UpdatePostInput struct {
-//         ID          uint64   `lambda:"path.id"`
-//         Author      string   `lambda:"header.Author"`
-//         Title       string   `json:"title"`
-//         Content     string   `json:"content"`
-//     }
-//
+//	type UpdatePostInput struct {
+//	    ID          uint64   `lambda:"path.id"`
+//	    Author      string   `lambda:"header.Author"`
+//	    Title       string   `json:"title"`
+//	    Content     string   `json:"content"`
+//	}
 func UnmarshalReq(req events.APIGatewayProxyRequest, body bool, target interface{}) error {
 	if body {
 		err := unmarshalBody(req, target)

@@ -144,6 +144,7 @@ func GenerateEmptySuccessHandler() lambda_router.Handler {
 
 // LogRequestMW is a standard middleware function that will log every incoming
 // events.APIGatewayProxyRequest request and the pertinent information in it.
+//
 //goland:noinspection GoUnusedExportedFunction
 func LogRequestMW(next lambda_router.Handler) lambda_router.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
