@@ -65,11 +65,18 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Body:                            string(body),
 		HTTPMethod:                      r.Method,
 		Headers:                         singleValueHeaders,
-		IsBase64Encoded:                 strings.HasPrefix(r.Header.Get(ContentTypeKey), "multipart/form-data; boundary"),
+		IsBase64Encoded:                 false,
 		MultiValueHeaders:               map[string][]string(r.Header),
 		MultiValueQueryStringParameters: map[string][]string(r.URL.Query()),
 		Path:                            r.URL.Path,
 		QueryStringParameters:           singleValueQuery,
+	}
+
+	// if submitting a multi-part form / binary data then it needs to be base64
+	// encoded. this is how lambda expects it to be submitted.
+	if strings.HasPrefix(r.Header.Get(ContentTypeKey), "multipart/form-data; boundary") {
+		event.Body = base64.StdEncoding.EncodeToString(body)
+		event.IsBase64Encoded = true
 	}
 
 	res, err := l.Handler(r.Context(), event)
