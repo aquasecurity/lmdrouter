@@ -14,9 +14,12 @@ import (
 )
 
 const ContentTypeKey = "Content-Type"
-const CORSHeadersKey = "Access-Control-Allow-Headers"
-const CORSMethodsKey = "Access-Control-Allow-Methods"
-const CORSOriginKey = "Access-Control-Allow-Origin"
+const CORSHeadersHeaderKey = "Access-Control-Allow-Headers"
+const CORSMethodsHeaderKey = "Access-Control-Allow-Methods"
+const CORSOriginHeaderKey = "Access-Control-Allow-Origin"
+const CORSHeadersEnvKey = "LAMBDA_JWT_ROUTER_CORS_HEADERS"
+const CORSMethodsEnvKey = "LAMBDA_JWT_ROUTER_CORS_METHODS"
+const CORSOriginEnvKey = "LAMBDA_JWT_ROUTER_CORS_ORIGIN"
 
 // ServerHTTP implements the net/http.Handler interface in order to allow
 // lmdrouter applications to be used outside of AWS Lambda environments, most
@@ -28,25 +31,21 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		r.URL.Query(),
 	)
 
-	corsHeaders := os.Getenv("LAMBDA_JWT_ROUTER_CORS_HEADERS")
-	corsMethods := os.Getenv("LAMBDA_JWT_ROUTER_CORS_METHODS")
-	corsOrigins := os.Getenv("LAMBDA_JWT_ROUTER_CORS_ORIGIN")
+	corsHeaders := os.Getenv(CORSHeadersEnvKey)
+	corsMethods := os.Getenv(CORSMethodsEnvKey)
+	corsOrigins := os.Getenv(CORSOriginEnvKey)
 
-	if corsHeaders == "" {
-		corsHeaders = "*"
+	if corsHeaders != "" {
+		w.Header().Set(CORSHeadersHeaderKey, corsHeaders)
 	}
 
-	if corsMethods == "" {
-		corsMethods = "*"
+	if corsMethods != "" {
+		w.Header().Set(CORSMethodsHeaderKey, corsMethods)
 	}
 
-	if corsOrigins == "" {
-		corsOrigins = "*"
+	if corsOrigins != "" {
+		w.Header().Set(CORSOriginHeaderKey, corsOrigins)
 	}
-
-	w.Header().Set(CORSHeadersKey, "*")
-	w.Header().Set(CORSMethodsKey, corsMethods)
-	w.Header().Set(CORSOriginKey, corsOrigins)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
