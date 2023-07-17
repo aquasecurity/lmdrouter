@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/jgroeneveld/trial/assert"
@@ -14,6 +15,13 @@ type customStruct struct {
 }
 
 func TestCustomRes(t *testing.T) {
+	os.Setenv(CORSHeadersEnvKey, "headers-header-val")
+	defer os.Unsetenv(CORSHeadersEnvKey)
+	os.Setenv(CORSMethodsEnvKey, "methods-header-val")
+	defer os.Unsetenv(CORSMethodsEnvKey)
+	os.Setenv(CORSOriginEnvKey, "origin-header-val")
+	defer os.Unsetenv(CORSOriginEnvKey)
+
 	httpStatus := http.StatusTeapot
 	headers := map[string]string{
 		"key": "value",
@@ -40,9 +48,9 @@ func TestCustomRes(t *testing.T) {
 		assert.Equal(t, httpStatus, res.StatusCode)
 	})
 	t.Run("verify CustomRes returns CORS headers", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		assert.Equal(t, res.Headers[CORSHeadersHeaderKey], "headers-header-val")
+		assert.Equal(t, res.Headers[CORSMethodsHeaderKey], "methods-header-val")
+		assert.Equal(t, res.Headers[CORSOriginHeaderKey], "origin-header-val")
 	})
 }
 
@@ -56,13 +64,20 @@ func TestEmptyRes(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 	})
 	t.Run("verify EmptyRes returns CORS headers", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		assert.Equal(t, res.Headers[CORSHeadersEnvKey], "")
+		assert.Equal(t, res.Headers[CORSMethodsEnvKey], "")
+		assert.Equal(t, res.Headers[CORSOriginEnvKey], "")
 	})
 }
 
 func TestErrorRes(t *testing.T) {
+	os.Setenv(CORSHeadersEnvKey, "*")
+	defer os.Unsetenv(CORSHeadersEnvKey)
+	os.Setenv(CORSMethodsEnvKey, "*")
+	defer os.Unsetenv(CORSMethodsEnvKey)
+	os.Setenv(CORSOriginEnvKey, "*")
+	defer os.Unsetenv(CORSOriginEnvKey)
+
 	t.Run("Handle an HTTPError ErrorRes without ExposeServerErrors set and verify CORS", func(t *testing.T) {
 		res, _ := ErrorRes(HTTPError{
 			Status:  http.StatusBadRequest,
@@ -71,9 +86,9 @@ func TestErrorRes(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "status status must be correct")
 		assert.Equal(t, `{"status":400,"message":"Invalid input"}`, res.Body, "body must be correct")
 		t.Run("verify ErrorRes returns CORS headers", func(t *testing.T) {
-			assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-			assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-			assert.Equal(t, res.Headers[CORSOriginKey], "*")
+			assert.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
+			assert.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
+			assert.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
 		})
 	})
 	t.Run("Handle an HTTPError for ErrorRes when ExposeServerErrors is true", func(t *testing.T) {
@@ -109,6 +124,13 @@ func TestErrorRes(t *testing.T) {
 }
 
 func TestFileRes(t *testing.T) {
+	os.Setenv(CORSHeadersEnvKey, "*")
+	defer os.Unsetenv(CORSHeadersEnvKey)
+	os.Setenv(CORSMethodsEnvKey, "*")
+	defer os.Unsetenv(CORSMethodsEnvKey)
+	os.Setenv(CORSOriginEnvKey, "*")
+	defer os.Unsetenv(CORSOriginEnvKey)
+
 	csvContent := `
 header1, header2
 value1, value2
@@ -129,13 +151,20 @@ value1, value2
 		assert.Equal(t, "value", res.Headers["key"])
 	})
 	t.Run("verify FileRes returns CORS headers", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		assert.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
 	})
 }
 
 func TestFileB64Res(t *testing.T) {
+	os.Setenv(CORSHeadersEnvKey, "*")
+	defer os.Unsetenv(CORSHeadersEnvKey)
+	os.Setenv(CORSMethodsEnvKey, "*")
+	defer os.Unsetenv(CORSMethodsEnvKey)
+	os.Setenv(CORSOriginEnvKey, "*")
+	defer os.Unsetenv(CORSOriginEnvKey)
+
 	csvContent := `
 header1, header2
 value1, value2
@@ -160,13 +189,20 @@ value1, value2
 		assert.Equal(t, "value", res.Headers["key"])
 	})
 	t.Run("verify FileB64Res returns CORS headers", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		assert.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
 	})
 }
 
 func TestStatusAndErrorRes(t *testing.T) {
+	os.Setenv(CORSHeadersEnvKey, "*")
+	defer os.Unsetenv(CORSHeadersEnvKey)
+	os.Setenv(CORSMethodsEnvKey, "*")
+	defer os.Unsetenv(CORSMethodsEnvKey)
+	os.Setenv(CORSOriginEnvKey, "*")
+	defer os.Unsetenv(CORSOriginEnvKey)
+
 	newErr := errors.New("hello there")
 	res, err := StatusAndErrorRes(http.StatusTeapot, newErr)
 	assert.Nil(t, err)
@@ -175,13 +211,20 @@ func TestStatusAndErrorRes(t *testing.T) {
 		assert.Equal(t, http.StatusTeapot, res.StatusCode)
 	})
 	t.Run("verify StatusAndErrorRes returns CORS headers", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		assert.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
 	})
 }
 
 func TestSuccessRes(t *testing.T) {
+	os.Setenv(CORSHeadersEnvKey, "*")
+	defer os.Unsetenv(CORSHeadersEnvKey)
+	os.Setenv(CORSMethodsEnvKey, "*")
+	defer os.Unsetenv(CORSMethodsEnvKey)
+	os.Setenv(CORSOriginEnvKey, "*")
+	defer os.Unsetenv(CORSOriginEnvKey)
+
 	cs := customStruct{StructKey: "hello there"}
 	res, err := SuccessRes(cs)
 	assert.Nil(t, err)
@@ -195,8 +238,8 @@ func TestSuccessRes(t *testing.T) {
 		assert.Equal(t, cs, returnedStruct)
 	})
 	t.Run("verify SuccessRes returns CORS headers", func(t *testing.T) {
-		assert.Equal(t, res.Headers[CORSHeadersKey], "*")
-		assert.Equal(t, res.Headers[CORSMethodsKey], "*")
-		assert.Equal(t, res.Headers[CORSOriginKey], "*")
+		assert.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
+		assert.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
 	})
 }

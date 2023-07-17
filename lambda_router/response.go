@@ -148,25 +148,21 @@ func (err HTTPError) Error() string {
 
 // addCors injects CORS Origin and CORS Methods headers into the response object before it's returned.
 func addCors(headers map[string]string) map[string]string {
-	corsHeaders := os.Getenv("LAMBDA_JWT_ROUTER_CORS_HEADERS")
-	corsMethods := os.Getenv("LAMBDA_JWT_ROUTER_CORS_METHODS")
-	corsOrigins := os.Getenv("LAMBDA_JWT_ROUTER_CORS_ORIGIN")
+	corsHeaders := os.Getenv(CORSHeadersEnvKey)
+	corsMethods := os.Getenv(CORSMethodsEnvKey)
+	corsOrigins := os.Getenv(CORSOriginEnvKey)
 
-	if corsHeaders == "" {
-		corsHeaders = "*"
+	if corsHeaders != "" {
+		headers[CORSHeadersHeaderKey] = corsHeaders
 	}
 
-	if corsMethods == "" {
-		corsMethods = "*"
+	if corsMethods != "" {
+		headers[CORSMethodsHeaderKey] = corsMethods
 	}
 
-	if corsOrigins == "" {
-		corsOrigins = "*"
+	if corsOrigins != "" {
+		headers[CORSOriginHeaderKey] = corsOrigins
 	}
-
-	headers[CORSHeadersKey] = corsHeaders
-	headers[CORSMethodsKey] = corsMethods
-	headers[CORSOriginKey] = corsOrigins
 
 	return headers
 }
