@@ -39,11 +39,11 @@ func (l *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set(CORSHeadersHeaderKey, corsHeaders)
 	}
 
-	if corsMethods == "" {
+	if corsMethods != "" {
 		w.Header().Set(CORSMethodsHeaderKey, corsMethods)
 	}
 
-	if corsOrigins == "" {
+	if corsOrigins != "" {
 		w.Header().Set(CORSOriginHeaderKey, corsOrigins)
 	}
 
