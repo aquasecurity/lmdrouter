@@ -7,9 +7,7 @@ require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jgroeneveld/trial v2.0.0+incompatible
 	github.com/joho/godotenv v1.4.0
+	go.mongodb.org/mongo-driver v1.13.1
 )
 
-require (
-	github.com/jgroeneveld/schema v1.0.0 // indirect
-	go.mongodb.org/mongo-driver v1.13.1 // indirect
-)
+require github.com/jgroeneveld/schema v1.0.0 // indirect
