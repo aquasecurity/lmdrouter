@@ -9,4 +9,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 )
 
-require github.com/jgroeneveld/schema v1.0.0 // indirect
+require (
+	github.com/jgroeneveld/schema v1.0.0 // indirect
+	go.mongodb.org/mongo-driver v1.13.1 // indirect
+)

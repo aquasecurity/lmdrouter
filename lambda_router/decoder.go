@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"net/http"
 	"reflect"
@@ -178,6 +179,23 @@ func unmarshalField(
 	param string,
 ) error {
 	switch typeField.Kind() {
+	case reflect.Array:
+		if typeField.Elem().Kind() == reflect.Uint8 && typeField.Len() == 12 {
+			// Assuming MongoDB IDs are 12-byte arrays
+			byteArray := make([]byte, typeField.Len())
+			for i := 0; i < typeField.Len(); i++ {
+				byteArray[i] = byte(valueField.Index(i).Uint())
+			}
+
+			// Convert byte array to MongoDB ObjectID
+			objectID, err := primitive.ObjectIDFromHex(string(byteArray))
+			if err != nil {
+				return err
+			}
+
+			valueField.Set(reflect.ValueOf(objectID))
+		}
+		// Handle other array types if necessary
 	case reflect.String:
 		valueField.SetString(params[param])
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
