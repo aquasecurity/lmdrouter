@@ -1,6 +1,7 @@
 package lambda_router
 
 import (
+	"cloud.google.com/go/civil"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -178,24 +179,81 @@ func unmarshalField(
 	multiParam map[string][]string,
 	param string,
 ) error {
-	switch typeField.Kind() {
-	case reflect.Array:
-		if typeField.Elem().Kind() == reflect.Uint8 && typeField.Len() == 12 {
-			// Assuming MongoDB IDs are 12-byte arrays
-			byteArray := make([]byte, typeField.Len())
-			for i := 0; i < typeField.Len(); i++ {
-				byteArray[i] = byte(valueField.Index(i).Uint())
-			}
-
-			// Convert byte array to MongoDB ObjectID
-			objectID, err := primitive.ObjectIDFromHex(string(byteArray))
-			if err != nil {
-				return err
-			}
-
-			valueField.Set(reflect.ValueOf(objectID))
+	if typeField.Kind() == reflect.Ptr && typeField.Elem() == reflect.TypeOf(civil.Date{}) {
+		parsed, parseErr := civil.ParseDate(params[param])
+		if parseErr != nil {
+			return nil
 		}
-		// Handle other array types if necessary
+		valueField.Set(reflect.ValueOf(&parsed))
+	}
+	if typeField.Kind() == reflect.Ptr && typeField.Elem() == reflect.TypeOf(time.Time{}) {
+		val, err := time.Parse(time.RFC3339, params[param])
+		if err != nil {
+			return nil
+		}
+
+		valueField.Set(reflect.ValueOf(&val))
+		return nil
+	} else if typeField.Kind() == reflect.Ptr && typeField.Elem() == reflect.TypeOf(primitive.ObjectID{}) {
+		hexString, ok := params[param]
+		if !ok {
+			return nil
+		}
+
+		if hexString == "" {
+			return nil
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(hexString)
+		if err != nil {
+			return fmt.Errorf("invalid ObjectID: %s", err)
+		}
+
+		// Create a pointer to the ObjectID and set the value
+		objectIDPtr := &objectID
+		valueField.Set(reflect.ValueOf(objectIDPtr))
+		return nil
+	} else if typeField.Kind() == reflect.Slice && typeField.Elem() == reflect.TypeOf(primitive.ObjectID{}) {
+		strValues, ok := multiParam[param]
+		if !ok {
+			return nil
+		}
+
+		objectIDs := make([]primitive.ObjectID, len(strValues))
+		for i, str := range strValues {
+			if str == "" {
+				return nil
+			}
+
+			objectID, err := primitive.ObjectIDFromHex(str)
+			if err != nil {
+				return fmt.Errorf("invalid ObjectID in slice: %s", err)
+			}
+			objectIDs[i] = objectID
+		}
+
+		valueField.Set(reflect.ValueOf(objectIDs))
+		return nil
+	} else if typeField == reflect.TypeOf(primitive.ObjectID{}) {
+		hexString, ok := params[param]
+		if !ok {
+			return nil
+		}
+
+		if hexString == "" {
+			return nil
+		}
+
+		objectID, err := primitive.ObjectIDFromHex(hexString)
+		if err != nil {
+			return fmt.Errorf("invalid ObjectID: %s", err)
+		}
+
+		valueField.Set(reflect.ValueOf(objectID))
+		return nil
+	}
+
+	switch typeField.Kind() {
 	case reflect.String:
 		valueField.SetString(params[param])
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
@@ -224,7 +282,12 @@ func unmarshalField(
 	case reflect.Ptr:
 		if val, ok := params[param]; ok {
 			switch typeField.Elem().Kind() {
-			case reflect.Int, reflect.Int32, reflect.Int64, reflect.String, reflect.Float32, reflect.Float64:
+			case reflect.Int:
+				intVal, err := strconv.Atoi(val)
+				if err == nil {
+					valueField.Set(reflect.ValueOf(&intVal))
+				}
+			case reflect.Int32, reflect.Int64, reflect.String, reflect.Float32, reflect.Float64:
 				valueField.Set(reflect.ValueOf(&val).Convert(typeField))
 			case reflect.Struct:
 				if typeField.Elem() == reflect.TypeOf(time.Now()) {
