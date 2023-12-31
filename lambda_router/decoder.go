@@ -172,6 +172,17 @@ func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (err e
 	return nil
 }
 
+import (
+"fmt"
+"reflect"
+"strconv"
+"strings"
+"time"
+
+"cloud.google.com/go/civil"
+"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
 func unmarshalField(
 	typeField reflect.Type,
 	valueField reflect.Value,
@@ -179,169 +190,98 @@ func unmarshalField(
 	multiParam map[string][]string,
 	param string,
 ) error {
-	if typeField.Kind() == reflect.Ptr && typeField.Elem() == reflect.TypeOf(civil.Date{}) {
-		parsed, parseErr := civil.ParseDate(params[param])
-		if parseErr != nil {
-			return nil
-		}
-		valueField.Set(reflect.ValueOf(&parsed))
-	}
-	if typeField.Kind() == reflect.Ptr && typeField.Elem() == reflect.TypeOf(time.Time{}) {
-		val, err := time.Parse(time.RFC3339, params[param])
-		if err != nil {
-			return nil
-		}
-
-		valueField.Set(reflect.ValueOf(&val))
-		return nil
-	} else if typeField.Kind() == reflect.Ptr && typeField.Elem() == reflect.TypeOf(primitive.ObjectID{}) {
-		hexString, ok := params[param]
-		if !ok {
-			return nil
-		}
-
-		if hexString == "" {
-			return nil
-		}
-
-		objectID, err := primitive.ObjectIDFromHex(hexString)
-		if err != nil {
-			return fmt.Errorf("invalid ObjectID: %s", err)
-		}
-
-		// Create a pointer to the ObjectID and set the value
-		objectIDPtr := &objectID
-		valueField.Set(reflect.ValueOf(objectIDPtr))
-		return nil
-	} else if typeField.Kind() == reflect.Slice && typeField.Elem() == reflect.TypeOf(primitive.ObjectID{}) {
-		strValues, ok := multiParam[param]
-		if !ok {
-			return nil
-		}
-
-		objectIDs := make([]primitive.ObjectID, len(strValues))
-		for i, str := range strValues {
-			if str == "" {
-				return nil
-			}
-
-			objectID, err := primitive.ObjectIDFromHex(str)
-			if err != nil {
-				return fmt.Errorf("invalid ObjectID in slice: %s", err)
-			}
-			objectIDs[i] = objectID
-		}
-
-		valueField.Set(reflect.ValueOf(objectIDs))
-		return nil
-	} else if typeField == reflect.TypeOf(primitive.ObjectID{}) {
-		hexString, ok := params[param]
-		if !ok {
-			return nil
-		}
-
-		if hexString == "" {
-			return nil
-		}
-
-		objectID, err := primitive.ObjectIDFromHex(hexString)
-		if err != nil {
-			return fmt.Errorf("invalid ObjectID: %s", err)
-		}
-
-		valueField.Set(reflect.ValueOf(objectID))
-		return nil
-	}
-
 	switch typeField.Kind() {
-	case reflect.String:
-		valueField.SetString(params[param])
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		str, ok := params[param]
-		value, err := parseInt64Param(param, str, ok)
-		if err != nil {
-			return err
-		}
-		valueField.SetInt(value)
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		str, ok := params[param]
-		value, err := parseUint64Param(param, str, ok)
-		if err != nil {
-			return err
-		}
-		valueField.SetUint(value)
-	case reflect.Float32, reflect.Float64:
-		str, ok := params[param]
-		value, err := parseFloat64Param(param, str, ok)
-		if err != nil {
-			return err
-		}
-		valueField.SetFloat(value)
-	case reflect.Bool:
-		valueField.SetBool(boolRegex.MatchString(strings.ToLower(params[param])))
 	case reflect.Ptr:
-		if val, ok := params[param]; ok {
-			switch typeField.Elem().Kind() {
-			case reflect.Int:
-				intVal, err := strconv.Atoi(val)
-				if err == nil {
-					valueField.Set(reflect.ValueOf(&intVal))
-				}
-			case reflect.Int32, reflect.Int64, reflect.String, reflect.Float32, reflect.Float64:
-				valueField.Set(reflect.ValueOf(&val).Convert(typeField))
-			case reflect.Struct:
-				if typeField.Elem() == reflect.TypeOf(time.Now()) {
-					parsedTime, err := time.Parse(time.RFC3339, val)
-					if err != nil {
-						return err
-					}
-					valueField.Set(reflect.ValueOf(&parsedTime))
-				}
-			case reflect.Bool:
-				b := boolRegex.MatchString(strings.ToLower(val))
-				valueField.Set(reflect.ValueOf(&b))
-			}
-		}
-	case reflect.Slice:
-		// we'll be extracting values from multiParam, generating a slice and
-		// putting it in valueField
-		strValues, ok := multiParam[param]
-		if ok {
-			slice := reflect.MakeSlice(typeField, len(strValues), len(strValues))
-
-			for i, str := range strValues {
-				err := unmarshalField(
-					typeField.Elem(),
-					slice.Index(i),
-					map[string]string{"param": str},
-					nil,
-					"param",
-				)
+		// Handling pointer types
+		elemType := typeField.Elem()
+		switch {
+		case elemType == reflect.TypeOf(civil.Date{}):
+			if val, ok := params[param]; ok {
+				parsed, err := civil.ParseDate(val)
 				if err != nil {
 					return err
 				}
+				valueField.Set(reflect.ValueOf(&parsed))
 			}
-
-			valueField.Set(slice)
-		} else {
-			str, ok := params[param]
-			if ok {
-				stringParts := strings.Split(str, ",")
-				slice := reflect.MakeSlice(typeField, len(stringParts), len(stringParts))
-
-				for i, p := range stringParts {
-					inVal := reflect.ValueOf(p)
-					asVal := inVal.Convert(typeField.Elem())
-					slice.Index(i).Set(asVal)
+		case elemType == reflect.TypeOf(time.Time{}):
+			if val, ok := params[param]; ok {
+				t, err := time.Parse(time.RFC3339, val)
+				if err != nil {
+					return err
 				}
-
-				valueField.Set(slice)
+				valueField.Set(reflect.ValueOf(&t))
 			}
+		case elemType == reflect.TypeOf(primitive.ObjectID{}):
+			hexString, ok := params[param]
+			if ok && hexString != "" {
+				objectID, err := primitive.ObjectIDFromHex(hexString)
+				if err != nil {
+					return fmt.Errorf("invalid ObjectID: %s", err)
+				}
+				valueField.Set(reflect.ValueOf(&objectID))
+			}
+			// Add additional cases for other pointer types if necessary
+		}
+
+	case reflect.Slice:
+		// Handling slice types
+		sliceType := typeField.Elem()
+		switch {
+		case sliceType == reflect.TypeOf(primitive.ObjectID{}):
+			strValues, ok := multiParam[param]
+			if ok {
+				objectIDs := make([]primitive.ObjectID, 0, len(strValues))
+				for _, str := range strValues {
+					if str == "" {
+						continue
+					}
+					objectID, err := primitive.ObjectIDFromHex(str)
+					if err != nil {
+						return fmt.Errorf("invalid ObjectID in slice: %s", err)
+					}
+					objectIDs = append(objectIDs, objectID)
+				}
+				valueField.Set(reflect.ValueOf(objectIDs))
+			}
+			// Add additional cases for other slice types if necessary
+		}
+
+	default:
+		// Handling basic types
+		switch typeField {
+		case reflect.TypeOf(""):
+			valueField.SetString(params[param])
+		case reflect.TypeOf(0), reflect.TypeOf(int8(0)), reflect.TypeOf(int16(0)), reflect.TypeOf(int32(0)), reflect.TypeOf(int64(0)):
+			val, err := strconv.ParseInt(params[param], 10, 64)
+			if err != nil {
+				return err
+			}
+			valueField.SetInt(val)
+		case reflect.TypeOf(uint(0)), reflect.TypeOf(uint8(0)), reflect.TypeOf(uint16(0)), reflect.TypeOf(uint32(0)), reflect.TypeOf(uint64(0)):
+			val, err := strconv.ParseUint(params[param], 10, 64)
+			if err != nil {
+				return err
+			}
+			valueField.SetUint(val)
+		case reflect.TypeOf(float32(0)), reflect.TypeOf(float64(0)):
+			val, err := strconv.ParseFloat(params[param], 64)
+			if err != nil {
+				return err
+			}
+			valueField.SetFloat(val)
+		case reflect.TypeOf(false):
+			val, err := strconv.ParseBool(params[param])
+			if err != nil {
+				return err
+			}
+			valueField.SetBool(val)
+			// Add additional cases for other basic types if necessary
 		}
 	}
 
 	return nil
 }
+
 
 func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 	if !ok {
