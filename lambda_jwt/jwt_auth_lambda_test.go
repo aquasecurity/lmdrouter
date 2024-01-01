@@ -5,9 +5,9 @@ import (
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
-	"github.com/jgroeneveld/trial/assert"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
 	"time"
@@ -24,15 +24,15 @@ func TestAllowOptionsMW(t *testing.T) {
 		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
 		jwtMiddlewareHandler := AllowOptionsMW(GenerateEmptySuccessHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusOK)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusOK)
 	})
 	t.Run("verify OPTIONS req succeeds with invalid JWT for AllowOptions", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 		defer cancel()
 
 		signedJWT, err := Sign(nil)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		signedJWT = signedJWT + "hi" // create an invalid JWT
 
@@ -47,8 +47,8 @@ func TestAllowOptionsMW(t *testing.T) {
 		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
 		jwtMiddlewareHandler := AllowOptionsMW(GenerateEmptySuccessHandler())
 		res, err := jwtMiddlewareHandler(ctx, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusOK)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusOK)
 	})
 	t.Run("verify OPTIONS req succeeds with no Authorization header for AllowOptions", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -63,8 +63,8 @@ func TestAllowOptionsMW(t *testing.T) {
 		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
 		jwtMiddlewareHandler := AllowOptionsMW(GenerateEmptySuccessHandler())
 		res, err := jwtMiddlewareHandler(ctx, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusOK)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusOK)
 	})
 }
 
@@ -73,15 +73,15 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
 		jwtMiddlewareHandler := DecodeExpanded(GenerateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusBadRequest)
 
 		var responseBody lambda_router.HTTPError
 		err = lambda_router.UnmarshalRes(res, &responseBody)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
-		assert.Equal(t, responseBody.Status, res.StatusCode)
-		assert.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
+		require.Equal(t, responseBody.Status, res.StatusCode)
+		require.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
 	})
 	t.Run("verify context is returned by DecodeExpanded with a signed JWT", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -90,7 +90,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 		expandedClaims := generateExpandedMapClaims()
 
 		signedJWT, err := Sign(expandedClaims)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		req := events.APIGatewayProxyRequest{
 			HTTPMethod: http.MethodGet,
@@ -102,29 +102,29 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 
 		jwtMiddlewareHandler := DecodeExpanded(generateSuccessHandlerAndMapExpandedContext())
 		res, err := jwtMiddlewareHandler(ctx, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusOK)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusOK)
 
 		var returnedClaims ExpandedClaims
 		err = lambda_router.UnmarshalRes(res, &returnedClaims)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		// this verifies that the context gets set in the middleware inject function since the
 		// dummy handler passed to it as the 'next' call injects the values from its passed
 		// context object into the response body. The function doesn't work this way in practice
 		// however it does allow me to fully unit test it to make sure the context setting is working.
 		// It's hacky and I'm not proud of it but I'm not sure how else to do it.
-		assert.Equal(t, expandedClaims[AudienceKey], returnedClaims.Audience)
-		assert.Equal(t, expandedClaims[EmailKey], returnedClaims.Email)
-		assert.Equal(t, expandedClaims[ExpiresAtKey], returnedClaims.ExpiresAt)
-		assert.Equal(t, expandedClaims[FirstNameKey], returnedClaims.FirstName)
-		assert.Equal(t, expandedClaims[FullNameKey], returnedClaims.FullName)
-		assert.Equal(t, expandedClaims[IDKey], returnedClaims.ID)
-		assert.Equal(t, expandedClaims[IssuedAtKey], returnedClaims.IssuedAt)
-		assert.Equal(t, expandedClaims[IssuerKey], returnedClaims.Issuer)
-		assert.Equal(t, expandedClaims[LevelKey], returnedClaims.Level)
-		assert.Equal(t, expandedClaims[NotBeforeKey], returnedClaims.NotBefore)
-		assert.Equal(t, expandedClaims[SubjectKey], returnedClaims.Subject)
-		assert.Equal(t, expandedClaims[UserTypeKey], returnedClaims.UserType)
+		require.Equal(t, expandedClaims[AudienceKey], returnedClaims.Audience)
+		require.Equal(t, expandedClaims[EmailKey], returnedClaims.Email)
+		require.Equal(t, expandedClaims[ExpiresAtKey], returnedClaims.ExpiresAt)
+		require.Equal(t, expandedClaims[FirstNameKey], returnedClaims.FirstName)
+		require.Equal(t, expandedClaims[FullNameKey], returnedClaims.FullName)
+		require.Equal(t, expandedClaims[IDKey], returnedClaims.ID)
+		require.Equal(t, expandedClaims[IssuedAtKey], returnedClaims.IssuedAt)
+		require.Equal(t, expandedClaims[IssuerKey], returnedClaims.Issuer)
+		require.Equal(t, expandedClaims[LevelKey], returnedClaims.Level)
+		require.Equal(t, expandedClaims[NotBeforeKey], returnedClaims.NotBefore)
+		require.Equal(t, expandedClaims[SubjectKey], returnedClaims.Subject)
+		require.Equal(t, expandedClaims[UserTypeKey], returnedClaims.UserType)
 	})
 }
 
@@ -133,15 +133,15 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		req := events.APIGatewayProxyRequest{}
 		jwtMiddlewareHandler := DecodeStandard(GenerateEmptyErrorHandler())
 		res, err := jwtMiddlewareHandler(nil, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusBadRequest)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusBadRequest)
 
 		var responseBody lambda_router.HTTPError
 		err = lambda_router.UnmarshalRes(res, &responseBody)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
-		assert.Equal(t, responseBody.Status, res.StatusCode)
-		assert.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
+		require.Equal(t, responseBody.Status, res.StatusCode)
+		require.Equal(t, responseBody.Message, ErrNoAuthorizationHeader.Error())
 	})
 	t.Run("verify context is returned by DecodeStandard with a signed JWT", func(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -150,7 +150,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 		standardClaims := generateStandardMapClaims()
 
 		signedJWT, err := Sign(standardClaims)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
 		req := events.APIGatewayProxyRequest{
 			HTTPMethod: http.MethodGet,
@@ -162,103 +162,103 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 
 		jwtMiddlewareHandler := DecodeStandard(generateSuccessHandlerAndMapStandardContext())
 		res, err := jwtMiddlewareHandler(ctx, req)
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusOK)
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusOK)
 
 		var returnedClaims jwt.StandardClaims
 		err = lambda_router.UnmarshalRes(res, &returnedClaims)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 		// this verifies that the context gets set in the middleware inject function since the
 		// dummy handler passed to it as the 'next' call injects the values from its passed
 		// context object into the response body. The function doesn't work this way in practice
 		// however it does allow me to fully unit test it to make sure the context setting is working.
 		// It's hacky and I'm not proud of it but I'm not sure how else to do it.
-		assert.Equal(t, returnedClaims.Audience, standardClaims[AudienceKey])
-		assert.Equal(t, returnedClaims.ExpiresAt, standardClaims[ExpiresAtKey])
-		assert.Equal(t, returnedClaims.Id, standardClaims[IDKey])
-		assert.Equal(t, returnedClaims.IssuedAt, standardClaims[IssuedAtKey])
-		assert.Equal(t, returnedClaims.Issuer, standardClaims[IssuerKey])
-		assert.Equal(t, returnedClaims.NotBefore, standardClaims[NotBeforeKey])
-		assert.Equal(t, returnedClaims.Subject, standardClaims[SubjectKey])
+		require.Equal(t, returnedClaims.Audience, standardClaims[AudienceKey])
+		require.Equal(t, returnedClaims.ExpiresAt, standardClaims[ExpiresAtKey])
+		require.Equal(t, returnedClaims.Id, standardClaims[IDKey])
+		require.Equal(t, returnedClaims.IssuedAt, standardClaims[IssuedAtKey])
+		require.Equal(t, returnedClaims.Issuer, standardClaims[IssuerKey])
+		require.Equal(t, returnedClaims.NotBefore, standardClaims[NotBeforeKey])
+		require.Equal(t, returnedClaims.Subject, standardClaims[SubjectKey])
 	})
 }
 
 func TestExtractJWT(t *testing.T) {
 	standardClaims := generateStandardMapClaims()
 	signedJWT, err := Sign(standardClaims)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	t.Run("verify ExtractJWT returns err for empty Authorization header", func(t *testing.T) {
 		headers := map[string]string{"Authorization": ""}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoAuthorizationHeader))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoAuthorizationHeader))
 	})
 	t.Run("verify ExtractJWT returns err for Authorization header misspelled - all caps", func(t *testing.T) {
 		headers := map[string]string{"AUTHORIZATION": signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoAuthorizationHeader))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoAuthorizationHeader))
 	})
 	t.Run("verify ExtractJWT returns err for Authorization header misspelled - lowercase", func(t *testing.T) {
 		headers := map[string]string{"authorization": signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoAuthorizationHeader))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoAuthorizationHeader))
 	})
 	t.Run("verify ExtractJWT returns err for bearer prefix not used", func(t *testing.T) {
 		headers := map[string]string{"Authorization": signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
 	})
 	t.Run("verify ExtractJWT returns err for bearer not camel cased", func(t *testing.T) {
 		headers := map[string]string{"Authorization": "bearer " + signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
 	})
 	t.Run("verify ExtractJWT returns err for BEARER all caps", func(t *testing.T) {
 		headers := map[string]string{"Authorization": "BEARER " + signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
 	})
 	t.Run("verify ExtractJWT returns err for Bearer does not end with space", func(t *testing.T) {
 		headers := map[string]string{"Authorization": "Bearer" + signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 0)
-		assert.Equal(t, http.StatusBadRequest, httpStatus)
-		assert.NotNil(t, extractErr)
-		assert.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
+		require.True(t, len(mapClaims) == 0)
+		require.Equal(t, http.StatusBadRequest, httpStatus)
+		require.NotNil(t, extractErr)
+		require.True(t, errors.Is(extractErr, ErrNoBearerPrefix))
 	})
 	t.Run("verify ExtractJWT returns claims correctly with valid input", func(t *testing.T) {
 		headers := map[string]string{"Authorization": "Bearer " + signedJWT}
 		mapClaims, httpStatus, extractErr := ExtractJWT(headers)
-		assert.True(t, len(mapClaims) == 7)
-		assert.Equal(t, http.StatusOK, httpStatus)
-		assert.Nil(t, extractErr)
-		assert.Nil(t, extractErr)
+		require.True(t, len(mapClaims) == 7)
+		require.Equal(t, http.StatusOK, httpStatus)
+		require.Nil(t, extractErr)
+		require.Nil(t, extractErr)
 
-		assert.Equal(t, mapClaims[AudienceKey], mapClaims[AudienceKey])
-		assert.Equal(t, mapClaims[ExpiresAtKey], mapClaims[ExpiresAtKey])
-		assert.Equal(t, mapClaims[IDKey], mapClaims[IDKey])
-		assert.Equal(t, mapClaims[IssuedAtKey], mapClaims[IssuedAtKey])
-		assert.Equal(t, mapClaims[IssuerKey], mapClaims[IssuerKey])
-		assert.Equal(t, mapClaims[NotBeforeKey], mapClaims[NotBeforeKey])
-		assert.Equal(t, mapClaims[SubjectKey], mapClaims[SubjectKey])
+		require.Equal(t, mapClaims[AudienceKey], mapClaims[AudienceKey])
+		require.Equal(t, mapClaims[ExpiresAtKey], mapClaims[ExpiresAtKey])
+		require.Equal(t, mapClaims[IDKey], mapClaims[IDKey])
+		require.Equal(t, mapClaims[IssuedAtKey], mapClaims[IssuedAtKey])
+		require.Equal(t, mapClaims[IssuerKey], mapClaims[IssuerKey])
+		require.Equal(t, mapClaims[NotBeforeKey], mapClaims[NotBeforeKey])
+		require.Equal(t, mapClaims[SubjectKey], mapClaims[SubjectKey])
 	})
 }
 
@@ -266,13 +266,13 @@ func TestGenerateEmptyErrorHandler(t *testing.T) {
 	t.Run("verify empty error handler returns error", func(t *testing.T) {
 		errHandler := GenerateEmptyErrorHandler()
 		res, err := errHandler(nil, lambda_util.GenerateRandomAPIGatewayProxyRequest())
-		assert.Nil(t, err) // err handler embeds the error in the response, not the golang stack
-		assert.Equal(t, res.StatusCode, http.StatusInternalServerError)
+		require.Nil(t, err) // err handler embeds the error in the response, not the golang stack
+		require.Equal(t, res.StatusCode, http.StatusInternalServerError)
 		var httpError lambda_router.HTTPError
 		err = lambda_router.UnmarshalRes(res, &httpError)
-		assert.Nil(t, err)
-		assert.Equal(t, httpError.Status, http.StatusInternalServerError)
-		assert.Equal(t, httpError.Message, "this error is simulated")
+		require.Nil(t, err)
+		require.Equal(t, httpError.Status, http.StatusInternalServerError)
+		require.Equal(t, httpError.Message, "this error is simulated")
 	})
 }
 
@@ -280,9 +280,9 @@ func TestGenerateEmptySuccessHandler(t *testing.T) {
 	t.Run("verify empty success handler returns success", func(t *testing.T) {
 		successHandler := GenerateEmptySuccessHandler()
 		res, err := successHandler(nil, lambda_util.GenerateRandomAPIGatewayProxyRequest())
-		assert.Nil(t, err)
-		assert.Equal(t, res.StatusCode, http.StatusOK)
-		assert.Equal(t, res.Body, "{}") // empty struct response
+		require.Nil(t, err)
+		require.Equal(t, res.StatusCode, http.StatusOK)
+		require.Equal(t, res.Body, "{}") // empty struct response
 	})
 }
 

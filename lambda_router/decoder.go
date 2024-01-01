@@ -1,10 +1,12 @@
 package lambda_router
 
 import (
+	"cloud.google.com/go/civil"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"net/http"
 	"reflect"
@@ -16,7 +18,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-var boolRegex = regexp.MustCompile(`^1|true|on|enabled$`)
+var boolRegex = regexp.MustCompile(`^1|true|on|enabled|t$`)
 
 // MarshalReq will take an interface input, marshal it to JSON, and add the
 // JSON as a string to the events.APIGatewayProxyRequest body field before returning.
@@ -177,85 +179,202 @@ func unmarshalField(
 	multiParam map[string][]string,
 	param string,
 ) error {
+	strVal, ok := params[param]
+	strVals, okMulti := multiParam[param]
+
+	if !ok && !okMulti {
+		return nil
+	}
+
+	//fmt.Println(fmt.Sprintf("param %s", param))
+	//fmt.Println(fmt.Sprintf("params[param] %s", strVal))
+	//fmt.Println(fmt.Sprintf("multiParam[param] %+v", strVals))
+	//fmt.Println(fmt.Sprintf("typeField.Name() %s", typeField.Name()))
+	//fmt.Println(fmt.Sprintf("typeField.Kind() %s", typeField.Kind()))
+	//
+	//if typeField.Kind() == reflect.Array ||
+	//	typeField.Kind() == reflect.Chan ||
+	//	typeField.Kind() == reflect.Map ||
+	//	typeField.Kind() == reflect.Ptr ||
+	//	typeField.Kind() == reflect.Slice {
+	//	fmt.Println(fmt.Sprintf("typeField.Elem() %s", typeField.Elem()))
+	//	fmt.Println(fmt.Sprintf("typeField.Elem().Kind() %s", typeField.Elem().Kind()))
+	//}
+
+	//fmt.Println(fmt.Sprintf("valueField.Type() %s", valueField.Type()))
+	//fmt.Println(fmt.Sprintf("valueField.Kind() %s", valueField.Kind()))
+	//
+	//fmt.Print("\n\n\n")
+
 	switch typeField.Kind() {
+	case reflect.Array:
+		objectID, err := primitive.ObjectIDFromHex(strVal)
+		if err != nil {
+			return fmt.Errorf("invalid ObjectID: %s", err)
+		}
+		valueField.Set(reflect.ValueOf(objectID))
+
 	case reflect.String:
-		valueField.SetString(params[param])
+		valueField.SetString(strVal)
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		str, ok := params[param]
-		value, err := parseInt64Param(param, str, ok)
+		value, err := parseInt64Param(param, strVal, ok)
 		if err != nil {
 			return err
 		}
 		valueField.SetInt(value)
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		str, ok := params[param]
-		value, err := parseUint64Param(param, str, ok)
+		value, err := parseUint64Param(param, strVal, ok)
 		if err != nil {
 			return err
 		}
 		valueField.SetUint(value)
 	case reflect.Float32, reflect.Float64:
-		str, ok := params[param]
-		value, err := parseFloat64Param(param, str, ok)
+		value, err := parseFloat64Param(param, strVal, ok)
 		if err != nil {
 			return err
 		}
 		valueField.SetFloat(value)
 	case reflect.Bool:
-		valueField.SetBool(boolRegex.MatchString(strings.ToLower(params[param])))
+		valueField.SetBool(boolRegex.MatchString(strings.ToLower(strVal)))
 	case reflect.Ptr:
-		if val, ok := params[param]; ok {
+		if ok {
 			switch typeField.Elem().Kind() {
-			case reflect.Int, reflect.Int32, reflect.Int64, reflect.String, reflect.Float32, reflect.Float64:
-				valueField.Set(reflect.ValueOf(&val).Convert(typeField))
+			case reflect.String:
+				valueField.Set(reflect.ValueOf(&strVal).Convert(typeField))
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				value, err := parseInt64Param(param, strVal, ok)
+				if err != nil {
+					return err
+				}
+				// Create a new pointer to the integer type
+				intPtr := reflect.New(typeField.Elem())
+				// Set the value to the newly created pointer
+				intPtr.Elem().SetInt(value)
+				// Set the field to the new pointer
+				valueField.Set(intPtr)
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				value, err := parseUint64Param(param, strVal, ok)
+				if err != nil {
+					return err
+				}
+				// Create a new pointer to the integer type
+				intPtr := reflect.New(typeField.Elem())
+				// Set the value to the newly created pointer
+				intPtr.Elem().SetUint(value)
+				// Set the field to the new pointer
+				valueField.Set(intPtr)
+			case reflect.Float32, reflect.Float64:
+				value, err := parseFloat64Param(param, strVal, ok)
+				if err != nil {
+					return err
+				}
+				// Create a new pointer to the integer type
+				intPtr := reflect.New(typeField.Elem())
+				// Set the value to the newly created pointer
+				intPtr.Elem().SetFloat(value)
+				// Set the field to the new pointer
+				valueField.Set(intPtr)
 			case reflect.Struct:
-				if typeField.Elem() == reflect.TypeOf(time.Now()) {
-					parsedTime, err := time.Parse(time.RFC3339, val)
+				if typeField.Elem() == reflect.TypeOf(civil.Date{}) {
+					parsedCivil, err := civil.ParseDate(strVal)
+					if err != nil {
+						return err
+					}
+					valueField.Set(reflect.ValueOf(&parsedCivil))
+				} else if typeField.Elem() == reflect.TypeOf(time.Time{}) {
+					parsedTime, err := time.Parse(time.RFC3339, strVal)
 					if err != nil {
 						return err
 					}
 					valueField.Set(reflect.ValueOf(&parsedTime))
 				}
 			case reflect.Bool:
-				b := boolRegex.MatchString(strings.ToLower(val))
+				b := boolRegex.MatchString(strings.ToLower(strVal))
 				valueField.Set(reflect.ValueOf(&b))
+			// Handling mongo DB ID types
+			default:
+				switch typeField.Elem() {
+				case reflect.TypeOf(primitive.ObjectID{}):
+					objectID, err := primitive.ObjectIDFromHex(strVal)
+					if err != nil {
+						return fmt.Errorf("invalid ObjectID: %s", err)
+					}
+					valueField.Set(reflect.ValueOf(&objectID))
+				}
 			}
 		}
 	case reflect.Slice:
-		// we'll be extracting values from multiParam, generating a slice and
-		// putting it in valueField
-		strValues, ok := multiParam[param]
-		if ok {
-			slice := reflect.MakeSlice(typeField, len(strValues), len(strValues))
+		if typeField.Elem().Kind() == reflect.Ptr && typeField.Elem().Elem().Kind() == reflect.String {
+			// Handling the slice of pointers to custom string type (like Number)
+			stringValues := strVals
+			if !okMulti {
+				stringValues = strings.Split(strVal, ",")
+			}
+			slice := reflect.MakeSlice(typeField, len(stringValues), len(stringValues))
 
-			for i, str := range strValues {
-				err := unmarshalField(
-					typeField.Elem(),
-					slice.Index(i),
-					map[string]string{"param": str},
-					nil,
-					"param",
-				)
-				if err != nil {
-					return err
-				}
+			for i, strVal := range stringValues {
+				// Create a new instance of the element type (which is a pointer)
+				newElemPtr := reflect.New(typeField.Elem().Elem())
+				// Set the value of the new instance
+				newElemPtr.Elem().SetString(strVal)
+				// Set the slice element to the new instance
+				slice.Index(i).Set(newElemPtr)
 			}
 
 			valueField.Set(slice)
 		} else {
-			str, ok := params[param]
-			if ok {
-				stringParts := strings.Split(str, ",")
-				slice := reflect.MakeSlice(typeField, len(stringParts), len(stringParts))
+			// we'll be extracting values from multiParam, generating a slice and
+			// putting it in valueField
+			if okMulti {
+				slice := reflect.MakeSlice(typeField, len(strVals), len(strVals))
 
-				for i, p := range stringParts {
-					inVal := reflect.ValueOf(p)
-					asVal := inVal.Convert(typeField.Elem())
-					slice.Index(i).Set(asVal)
+				for i, str := range strVals {
+					err := unmarshalField(
+						typeField.Elem(),
+						slice.Index(i),
+						map[string]string{"param": str},
+						nil,
+						"param",
+					)
+					if err != nil {
+						return err
+					}
 				}
 
 				valueField.Set(slice)
+			} else {
+				if ok {
+					stringParts := strings.Split(strVal, ",")
+					if len(stringParts) < 1 {
+						return nil
+					}
+					slice := reflect.MakeSlice(typeField, len(stringParts), len(stringParts))
+
+					for i, p := range stringParts {
+						inVal := reflect.ValueOf(p)
+						asVal := inVal.Convert(typeField.Elem())
+						slice.Index(i).Set(asVal)
+					}
+
+					valueField.Set(slice)
+				}
 			}
+		}
+
+	case reflect.Struct:
+		switch valueField.Type() {
+		case reflect.TypeOf(time.Time{}):
+			parsedTime, err := time.Parse(time.RFC3339, strVal)
+			if err != nil {
+				return err
+			}
+			valueField.Set(reflect.ValueOf(parsedTime))
+		case reflect.TypeOf(civil.Date{}):
+			parsedCivil, err := civil.ParseDate(strVal)
+			if err != nil {
+				return err
+			}
+			valueField.Set(reflect.ValueOf(parsedCivil))
 		}
 	}
 

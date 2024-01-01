@@ -3,9 +3,9 @@ package lambda_jwt
 import (
 	"errors"
 	"github.com/golang-jwt/jwt"
-	"github.com/jgroeneveld/trial/assert"
 	"github.com/joho/godotenv"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
+	"github.com/stretchr/testify/require"
 	"log"
 	"strings"
 	"testing"
@@ -48,27 +48,27 @@ func TestExtendExpandedClaims(t *testing.T) {
 
 	t.Run("verify sign and verify expanded and custom fields in claims", func(t *testing.T) {
 		signedJWT, signErr := Sign(extendedClaims)
-		assert.Nil(t, signErr)
+		require.Nil(t, signErr)
 
 		retrievedClaims, verifyErr := VerifyJWT(signedJWT)
-		assert.Nil(t, verifyErr)
+		require.Nil(t, verifyErr)
 
 		// verify the expanded claims values first
-		assert.Equal(t, retrievedClaims[AudienceKey], expandedClaims.Audience)
-		assert.Equal(t, retrievedClaims[ExpiresAtKey], float64(expandedClaims.ExpiresAt))
-		assert.Equal(t, retrievedClaims[FirstNameKey], expandedClaims.FirstName)
-		assert.Equal(t, retrievedClaims[IDKey], expandedClaims.ID)
-		assert.Equal(t, retrievedClaims[IssuedAtKey], float64(expandedClaims.IssuedAt))
-		assert.Equal(t, retrievedClaims[IssuerKey], expandedClaims.Issuer)
-		assert.Equal(t, retrievedClaims[LevelKey], expandedClaims.Level)
-		assert.Equal(t, retrievedClaims[NotBeforeKey], float64(expandedClaims.NotBefore))
-		assert.Equal(t, retrievedClaims[SubjectKey], expandedClaims.Subject)
-		assert.Equal(t, retrievedClaims[UserTypeKey], expandedClaims.UserType)
+		require.Equal(t, retrievedClaims[AudienceKey], expandedClaims.Audience)
+		require.Equal(t, retrievedClaims[ExpiresAtKey], float64(expandedClaims.ExpiresAt))
+		require.Equal(t, retrievedClaims[FirstNameKey], expandedClaims.FirstName)
+		require.Equal(t, retrievedClaims[IDKey], expandedClaims.ID)
+		require.Equal(t, retrievedClaims[IssuedAtKey], float64(expandedClaims.IssuedAt))
+		require.Equal(t, retrievedClaims[IssuerKey], expandedClaims.Issuer)
+		require.Equal(t, retrievedClaims[LevelKey], expandedClaims.Level)
+		require.Equal(t, retrievedClaims[NotBeforeKey], float64(expandedClaims.NotBefore))
+		require.Equal(t, retrievedClaims[SubjectKey], expandedClaims.Subject)
+		require.Equal(t, retrievedClaims[UserTypeKey], expandedClaims.UserType)
 
 		// verify the custom claim values second
-		assert.Equal(t, retrievedClaims["hi"], "sean")
-		assert.Equal(t, retrievedClaims["hello"], "there")
-		assert.Equal(t, retrievedClaims["number"], float64(34))
+		require.Equal(t, retrievedClaims["hi"], "sean")
+		require.Equal(t, retrievedClaims["hello"], "there")
+		require.Equal(t, retrievedClaims["number"], float64(34))
 	})
 }
 
@@ -91,24 +91,24 @@ func TestExtendStandardClaims(t *testing.T) {
 
 	t.Run("verify sign and verify standard and custom fields in claims", func(t *testing.T) {
 		signedJWT, signErr := Sign(extendedClaims)
-		assert.Nil(t, signErr)
+		require.Nil(t, signErr)
 
 		retrievedClaims, verifyErr := VerifyJWT(signedJWT)
-		assert.Nil(t, verifyErr)
+		require.Nil(t, verifyErr)
 
 		// verify the expanded claims values first
-		assert.Equal(t, retrievedClaims[AudienceKey], standardClaims.Audience)
-		assert.Equal(t, retrievedClaims[ExpiresAtKey], float64(standardClaims.ExpiresAt))
-		assert.Equal(t, retrievedClaims[IDKey], standardClaims.Id)
-		assert.Equal(t, retrievedClaims[IssuedAtKey], float64(standardClaims.IssuedAt))
-		assert.Equal(t, retrievedClaims[IssuerKey], standardClaims.Issuer)
-		assert.Equal(t, retrievedClaims[NotBeforeKey], float64(standardClaims.NotBefore))
-		assert.Equal(t, retrievedClaims[SubjectKey], standardClaims.Subject)
+		require.Equal(t, retrievedClaims[AudienceKey], standardClaims.Audience)
+		require.Equal(t, retrievedClaims[ExpiresAtKey], float64(standardClaims.ExpiresAt))
+		require.Equal(t, retrievedClaims[IDKey], standardClaims.Id)
+		require.Equal(t, retrievedClaims[IssuedAtKey], float64(standardClaims.IssuedAt))
+		require.Equal(t, retrievedClaims[IssuerKey], standardClaims.Issuer)
+		require.Equal(t, retrievedClaims[NotBeforeKey], float64(standardClaims.NotBefore))
+		require.Equal(t, retrievedClaims[SubjectKey], standardClaims.Subject)
 
 		// verify the custom claim values second
-		assert.Equal(t, retrievedClaims["hi"], "sean")
-		assert.Equal(t, retrievedClaims["hello"], "there")
-		assert.Equal(t, retrievedClaims["number"], float64(34))
+		require.Equal(t, retrievedClaims["hi"], "sean")
+		require.Equal(t, retrievedClaims["hello"], "there")
+		require.Equal(t, retrievedClaims["number"], float64(34))
 	})
 }
 
@@ -121,28 +121,28 @@ func TestExtractCustomClaims(t *testing.T) {
 			"exp": lambda_util.GenerateRandomString(10), // exp should be an integer
 		}, &badClaims{})
 
-		assert.NotNil(t, extractCustomErr)
-		assert.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
+		require.NotNil(t, extractCustomErr)
+		require.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
 	})
 	t.Run("verify ExtractCustom works when called with the correct parameters", func(t *testing.T) {
 		customClaims := generateExpandedMapClaims()
 
 		var expandedClaims ExpandedClaims
 		err := ExtractCustom(customClaims, &expandedClaims)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
-		assert.Equal(t, customClaims[AudienceKey], expandedClaims.Audience)
-		assert.Equal(t, customClaims[ExpiresAtKey], expandedClaims.ExpiresAt)
-		assert.Equal(t, customClaims[EmailKey], expandedClaims.Email)
-		assert.Equal(t, customClaims[FirstNameKey], expandedClaims.FirstName)
-		assert.Equal(t, customClaims[FullNameKey], expandedClaims.FullName)
-		assert.Equal(t, customClaims[IDKey], expandedClaims.ID)
-		assert.Equal(t, customClaims[IssuedAtKey], expandedClaims.IssuedAt)
-		assert.Equal(t, customClaims[IssuerKey], expandedClaims.Issuer)
-		assert.Equal(t, customClaims[LevelKey], expandedClaims.Level)
-		assert.Equal(t, customClaims[NotBeforeKey], expandedClaims.NotBefore)
-		assert.Equal(t, customClaims[SubjectKey], expandedClaims.Subject)
-		assert.Equal(t, customClaims[UserTypeKey], expandedClaims.UserType)
+		require.Equal(t, customClaims[AudienceKey], expandedClaims.Audience)
+		require.Equal(t, customClaims[ExpiresAtKey], expandedClaims.ExpiresAt)
+		require.Equal(t, customClaims[EmailKey], expandedClaims.Email)
+		require.Equal(t, customClaims[FirstNameKey], expandedClaims.FirstName)
+		require.Equal(t, customClaims[FullNameKey], expandedClaims.FullName)
+		require.Equal(t, customClaims[IDKey], expandedClaims.ID)
+		require.Equal(t, customClaims[IssuedAtKey], expandedClaims.IssuedAt)
+		require.Equal(t, customClaims[IssuerKey], expandedClaims.Issuer)
+		require.Equal(t, customClaims[LevelKey], expandedClaims.Level)
+		require.Equal(t, customClaims[NotBeforeKey], expandedClaims.NotBefore)
+		require.Equal(t, customClaims[SubjectKey], expandedClaims.Subject)
+		require.Equal(t, customClaims[UserTypeKey], expandedClaims.UserType)
 	})
 }
 
@@ -152,22 +152,22 @@ func TestExtractStandardClaims(t *testing.T) {
 			"exp": lambda_util.GenerateRandomString(10), // exp should be an integer
 		}, &jwt.StandardClaims{})
 
-		assert.NotNil(t, extractCustomErr)
-		assert.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
+		require.NotNil(t, extractCustomErr)
+		require.True(t, errors.Is(extractCustomErr, ErrBadClaimsObject))
 	})
 	t.Run("verify ExtractCustom works when called with the correct parameters", func(t *testing.T) {
 		customClaims := generateExpandedMapClaims()
 
 		var standardClaims jwt.StandardClaims
 		err := ExtractCustom(customClaims, &standardClaims)
-		assert.Nil(t, err)
+		require.Nil(t, err)
 
-		assert.Equal(t, customClaims[AudienceKey], standardClaims.Audience)
-		assert.Equal(t, customClaims[ExpiresAtKey], standardClaims.ExpiresAt)
-		assert.Equal(t, customClaims[IssuedAtKey], standardClaims.IssuedAt)
-		assert.Equal(t, customClaims[IssuerKey], standardClaims.Issuer)
-		assert.Equal(t, customClaims[NotBeforeKey], standardClaims.NotBefore)
-		assert.Equal(t, customClaims[SubjectKey], standardClaims.Subject)
+		require.Equal(t, customClaims[AudienceKey], standardClaims.Audience)
+		require.Equal(t, customClaims[ExpiresAtKey], standardClaims.ExpiresAt)
+		require.Equal(t, customClaims[IssuedAtKey], standardClaims.IssuedAt)
+		require.Equal(t, customClaims[IssuerKey], standardClaims.Issuer)
+		require.Equal(t, customClaims[NotBeforeKey], standardClaims.NotBefore)
+		require.Equal(t, customClaims[SubjectKey], standardClaims.Subject)
 	})
 }
 
@@ -175,28 +175,28 @@ func TestSign(t *testing.T) {
 	t.Run("verify signed jwt secret with valid standard claim", func(t *testing.T) {
 		customClaims := generateExpandedMapClaims()
 		signedJWT, err := Sign(customClaims)
-		assert.Nil(t, err)
-		assert.True(t, len(signedJWT) > 1)
-		assert.True(t, strings.HasPrefix(signedJWT, "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9"))
+		require.Nil(t, err)
+		require.True(t, len(signedJWT) > 1)
+		require.True(t, strings.HasPrefix(signedJWT, "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9"))
 	})
 }
 
 func TestVerifyJWT(t *testing.T) {
 	t.Run("verify err when parsing invalid jwt", func(t *testing.T) {
 		_, err := VerifyJWT(lambda_util.GenerateRandomString(10))
-		assert.NotNil(t, err)
-		assert.True(t, errors.Is(err, ErrInvalidJWT))
+		require.NotNil(t, err)
+		require.True(t, errors.Is(err, ErrInvalidJWT))
 	})
 	t.Run("verify err when parsing expired token with valid jwt", func(t *testing.T) {
 		customClaims := generateExpandedMapClaims()
 		customClaims["exp"] = time.Now().Add(time.Hour * -10)
 
 		expiredJWT, signErr := Sign(customClaims)
-		assert.Nil(t, signErr)
+		require.Nil(t, signErr)
 
 		_, err := VerifyJWT(expiredJWT)
-		assert.NotNil(t, err)
-		assert.True(t, errors.Is(err, ErrInvalidJWT))
+		require.NotNil(t, err)
+		require.True(t, errors.Is(err, ErrInvalidJWT))
 	})
 }
 
