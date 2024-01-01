@@ -186,25 +186,25 @@ func unmarshalField(
 		return nil
 	}
 
-	fmt.Println(fmt.Sprintf("param %s", param))
-	fmt.Println(fmt.Sprintf("params[param] %s", strVal))
-	fmt.Println(fmt.Sprintf("multiParam[param] %+v", strVals))
-	fmt.Println(fmt.Sprintf("typeField.Name() %s", typeField.Name()))
-	fmt.Println(fmt.Sprintf("typeField.Kind() %s", typeField.Kind()))
+	//fmt.Println(fmt.Sprintf("param %s", param))
+	//fmt.Println(fmt.Sprintf("params[param] %s", strVal))
+	//fmt.Println(fmt.Sprintf("multiParam[param] %+v", strVals))
+	//fmt.Println(fmt.Sprintf("typeField.Name() %s", typeField.Name()))
+	//fmt.Println(fmt.Sprintf("typeField.Kind() %s", typeField.Kind()))
+	//
+	//if typeField.Kind() == reflect.Array ||
+	//	typeField.Kind() == reflect.Chan ||
+	//	typeField.Kind() == reflect.Map ||
+	//	typeField.Kind() == reflect.Ptr ||
+	//	typeField.Kind() == reflect.Slice {
+	//	fmt.Println(fmt.Sprintf("typeField.Elem() %s", typeField.Elem()))
+	//	fmt.Println(fmt.Sprintf("typeField.Elem().Kind() %s", typeField.Elem().Kind()))
+	//}
 
-	if typeField.Kind() == reflect.Array ||
-		typeField.Kind() == reflect.Chan ||
-		typeField.Kind() == reflect.Map ||
-		typeField.Kind() == reflect.Ptr ||
-		typeField.Kind() == reflect.Slice {
-		fmt.Println(fmt.Sprintf("typeField.Elem() %s", typeField.Elem()))
-		fmt.Println(fmt.Sprintf("typeField.Elem().Kind() %s", typeField.Elem().Kind()))
-	}
-
-	fmt.Println(fmt.Sprintf("valueField.Type() %s", valueField.Type()))
-	fmt.Println(fmt.Sprintf("valueField.Kind() %s", valueField.Kind()))
-
-	fmt.Print("\n\n\n")
+	//fmt.Println(fmt.Sprintf("valueField.Type() %s", valueField.Type()))
+	//fmt.Println(fmt.Sprintf("valueField.Kind() %s", valueField.Kind()))
+	//
+	//fmt.Print("\n\n\n")
 
 	switch typeField.Kind() {
 	case reflect.Array:
