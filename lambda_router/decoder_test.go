@@ -1,21 +1,19 @@
 package lambda_router
 
 import (
-	"errors"
+	"cloud.google.com/go/civil"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
-	"net/http"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/jgroeneveld/trial/assert"
 )
 
 type mockConst string
-
-const (
-	mockConstTwo mockConst = "two"
-)
 
 type Number string
 
@@ -37,21 +35,44 @@ type mockGetReq struct {
 }
 
 type mockListReq struct {
-	ID         string              `lambda:"path.id"`
-	Page       int64               `lambda:"query.page"`
-	PageSize   int64               `lambda:"query.page_size"`
-	Terms      []string            `lambda:"query.terms"`
-	Numbers    []float64           `lambda:"query.numbers"`
-	Const      mockConst           `lambda:"query.const"`
-	Bool       bool                `lambda:"query.bool"`
-	PBoolOne   *bool               `lambda:"query.pbool1"`
-	PBoolTwo   *bool               `lambda:"query.pbool2"`
-	Time       *time.Time          `lambda:"query.time"`
-	Alias      stringAliasExample  `lambda:"query.alias"`
-	AliasPtr   *stringAliasExample `lambda:"query.alias_ptr"`
-	CommaSplit []Number            `lambda:"query.commaSplit"`
-	Language   string              `lambda:"header.Accept-Language"`
-	Encoding   []string            `lambda:"header.Accept-Encoding"`
+	Alias         stringAliasExample    `lambda:"query.alias"`
+	AliasPtr      *stringAliasExample   `lambda:"query.alias_ptr"`
+	Bool1         bool                  `lambda:"query.bool1"`
+	Bool2         bool                  `lambda:"query.bool2"`
+	Bool3         bool                  `lambda:"query.bool3"`
+	Bool4         bool                  `lambda:"query.bool4"`
+	Bool5         bool                  `lambda:"query.bool5"`
+	Bool6         bool                  `lambda:"query.bool6"`
+	Bool7         bool                  `lambda:"query.bool7"`
+	Bool8         bool                  `lambda:"query.bool8"`
+	Bool9         bool                  `lambda:"query.bool9"`
+	Civil         civil.Date            `lambda:"query.civil"`
+	CivilPtr      *civil.Date           `lambda:"query.civilPtr"`
+	CivilPtrNil   *civil.Date           `lambda:"query.civilPtrNil"`
+	CommaSplit    []Number              `lambda:"query.commaSplit"`
+	CommaSplitPtr []*Number             `lambda:"query.commaSplitPtr"`
+	Const         mockConst             `lambda:"query.const"`
+	ConstPtr      *mockConst            `lambda:"query.constPtr"`
+	ConstPtrNil   *mockConst            `lambda:"query.constPtrNil"`
+	Encoding      []string              `lambda:"header.Accept-Encoding"`
+	ID            string                `lambda:"path.id"`
+	IDs           []*string             `lambda:"query.ids"`
+	Language      string                `lambda:"header.Accept-Language"`
+	MongoID       primitive.ObjectID    `lambda:"query.mongoId"`
+	MongoIDPtr    *primitive.ObjectID   `lambda:"query.mongoIdPtr"`
+	MongoIDPtrNil *primitive.ObjectID   `lambda:"query.mongoIdPtrNil"`
+	MongoIDs      []primitive.ObjectID  `lambda:"query.mongoIds"`
+	MongoIDsPtr   []*primitive.ObjectID `lambda:"query.mongoIdsPtr"`
+	Number        *float32              `lambda:"query.number"`
+	Numbers       []float64             `lambda:"query.numbers"`
+	PBoolOne      *bool                 `lambda:"query.pbool1"`
+	PBoolTwo      *bool                 `lambda:"query.pbool2"`
+	Page          int64                 `lambda:"query.page"`
+	PageSize      *int64                `lambda:"query.page_size"`
+	Terms         []string              `lambda:"query.terms"`
+	Time          time.Time             `lambda:"query.time"`
+	TimePtr       *time.Time            `lambda:"query.timePtr"`
+	TimePtrNil    *time.Time            `lambda:"query.timePtrNil"`
 }
 
 type mockPostReq struct {
@@ -76,13 +97,16 @@ func TestMarshalLambdaRequest(t *testing.T) {
 		var miParsed mockItem
 		err := UnmarshalReq(req, true, &miParsed)
 		assert.Nil(t, err)
-		assert.Equal(t, mi.ID, miParsed.ID)
-		assert.Equal(t, mi.Name, miParsed.Name)
+		require.Equal(t, mi.ID, miParsed.ID)
+		require.Equal(t, mi.Name, miParsed.Name)
 	})
 }
 
 func Test_UnmarshalReq(t *testing.T) {
 	t.Run("valid path&query input", func(t *testing.T) {
+		mongoID1 := primitive.NewObjectID()
+		mongoID2 := primitive.NewObjectID()
+
 		var input mockListReq
 		err := UnmarshalReq(
 			events.APIGatewayProxyRequest{
@@ -90,19 +114,39 @@ func Test_UnmarshalReq(t *testing.T) {
 					"id": "fake-scan-id",
 				},
 				QueryStringParameters: map[string]string{
-					"page":       "2",
-					"page_size":  "30",
-					"const":      "two",
-					"bool":       "true",
-					"pbool1":     "0",
-					"time":       "2021-11-01T11:11:11.000Z",
-					"alias":      "hello",
-					"alias_ptr":  "world",
-					"commaSplit": "one,two,three",
+					"alias":         "hello",
+					"alias_ptr":     "world",
+					"bool1":         "1",
+					"bool2":         "true",
+					"bool3":         "on",
+					"bool4":         "enabled",
+					"bool5":         "t",
+					"bool6":         "TRUE",
+					"bool7":         "ON",
+					"bool8":         "ENABLED",
+					"bool9":         "T",
+					"civil":         "2023-12-22",
+					"civilPtr":      "2024-12-22",
+					"commaSplit":    "one,two,three",
+					"commaSplitPtr": "one,two,three",
+					"const":         "twenty",
+					"constPtr":      "thirty",
+					"mongoId":       mongoID1.Hex(),
+					"mongoIdPtr":    mongoID1.Hex(),
+					"number":        "90.10982",
+					"page":          "2",
+					"page_size":     "30",
+					"pbool1":        "0",
+					"time":          "2021-11-01T11:11:11.000Z",
+					"timePtr":       "2021-11-01T11:11:11.000Z",
 				},
 				MultiValueQueryStringParameters: map[string][]string{
-					"terms":   {"one", "two"},
-					"numbers": {"1.2", "3.5", "666.666"},
+					"commaSplits": {"four,five,six"},
+					"ids":         {"7", "8", "9"},
+					"mongoIds":    {mongoID1.Hex(), mongoID2.Hex()},
+					"mongoIdsPtr": {mongoID1.Hex(), mongoID2.Hex()},
+					"numbers":     {"1.2", "3.5", "666.666"},
+					"terms":       {"artist", "label"},
 				},
 				Headers: map[string]string{
 					"Accept-Language": "en-us",
@@ -114,25 +158,69 @@ func Test_UnmarshalReq(t *testing.T) {
 			false,
 			&input,
 		)
-		assert.Equal(t, nil, err, "ErrorRes must be nil")
-		assert.Equal(t, "fake-scan-id", input.ID, "ID must be parsed from path")
-		assert.Equal(t, int64(2), input.Page, "Page must be parsed from query")
-		assert.Equal(t, int64(30), input.PageSize, "PageSize must be parsed from query")
-		assert.Equal(t, "en-us", input.Language, "Language must be parsed from headers")
-		assert.Equal(t, mockConstTwo, input.Const, "Const must be parsed from query")
-		assert.True(t, input.Bool, "Bool must be true")
-		assert.NotNil(t, input.PBoolOne, "PBoolOne must not be nil")
-		assert.False(t, *input.PBoolOne, "PBoolOne must be *false")
-		assert.NotNil(t, input.Time, "Time must not be nil")
-		assert.Equal(t, input.Time.Format(time.RFC3339), "2021-11-01T11:11:11Z")
-		assert.Equal(t, input.Alias, stringAliasExample("hello"))
-		assert.NotNil(t, input.AliasPtr)
-		assert.Equal(t, *input.AliasPtr, aliasExample)
-		assert.DeepEqual(t, []Number{numberOne, numberTwo, numberThree}, input.CommaSplit, "CommaSplit must have 2 items")
-		assert.Equal(t, (*bool)(nil), input.PBoolTwo, "PBoolTwo must be nil")
-		assert.DeepEqual(t, []string{"one", "two"}, input.Terms, "Terms must be parsed from multiple query params")
-		assert.DeepEqual(t, []float64{1.2, 3.5, 666.666}, input.Numbers, "Numbers must be parsed from multiple query params")
-		assert.DeepEqual(t, []string{"gzip", "deflate"}, input.Encoding, "Encoding must be parsed from multiple header params")
+		require.NoError(t, err)
+
+		require.Equal(t, *input.AliasPtr, stringAliasExample("world"))
+		require.Equal(t, input.Alias, stringAliasExample("hello"))
+		require.Equal(t, input.Bool1, true)
+		require.Equal(t, input.Bool2, true)
+		require.Equal(t, input.Bool3, true)
+		require.Equal(t, input.Bool4, true)
+		require.Equal(t, input.Bool5, true)
+		require.Equal(t, input.Bool6, true)
+		require.Equal(t, input.Bool7, true)
+		require.Equal(t, input.Bool8, true)
+		require.Equal(t, input.Bool9, true)
+		require.Equal(t, input.Civil.String(), "2023-12-22")
+		require.Equal(t, input.CivilPtr.String(), "2024-12-22")
+		require.Equal(t, input.Const, mockConst("twenty"))
+		require.Equal(t, *input.ConstPtr, mockConst("thirty"))
+		require.Equal(t, input.ID, "fake-scan-id")
+		require.Equal(t, input.Language, "en-us")
+		require.Equal(t, input.MongoID, mongoID1)
+		require.Equal(t, input.MongoIDPtr.Hex(), mongoID1.Hex())
+		require.Equal(t, input.Number, func() *float32 { a := float32(90.10982); return &a }())
+		require.Equal(t, *input.PBoolOne, false)
+		require.Equal(t, input.Page, int64(2))
+		require.Equal(t, input.PageSize, func() *int64 { a := int64(30); return &a }())
+		require.Equal(t, input.Time, time.Date(2021, 11, 1, 11, 11, 11, 0, time.UTC))
+		require.Equal(t, *input.TimePtr, time.Date(2021, 11, 1, 11, 11, 11, 0, time.UTC))
+
+		numberPtrs := []*Number{
+			func() *Number { a := Number("one"); return &a }(),
+			func() *Number { a := Number("two"); return &a }(),
+			func() *Number { a := Number("three"); return &a }(),
+		}
+
+		idPtrs := []*string{
+			func() *string { a := "7"; return &a }(),
+			func() *string { a := "8"; return &a }(),
+			func() *string { a := "9"; return &a }(),
+		}
+
+		require.EqualValues(t, input.CommaSplit, []Number{"one", "two", "three"})
+		require.EqualValues(t, input.CommaSplitPtr, numberPtrs)
+		require.EqualValues(t, input.Encoding, []string{"gzip", "deflate"})
+		require.EqualValues(t, input.IDs, idPtrs)
+		require.EqualValues(t, input.MongoIDs, []primitive.ObjectID{mongoID1, mongoID2})
+		require.EqualValues(t, input.MongoIDsPtr, []*primitive.ObjectID{&mongoID1, &mongoID2})
+		require.EqualValues(t, input.Numbers, []float64{1.2, 3.5, 666.666})
+		require.EqualValues(t, input.Terms, []string{"artist", "label"})
+
+		require.Nil(t, input.CivilPtrNil)
+		require.Nil(t, input.ConstPtrNil)
+		require.Nil(t, input.MongoIDPtrNil)
+		require.Nil(t, input.PBoolTwo)
+		require.Nil(t, input.TimePtrNil)
+	})
+	t.Run("valid empty input", func(t *testing.T) {
+		var input mockListReq
+		err := UnmarshalReq(
+			events.APIGatewayProxyRequest{},
+			false,
+			&input,
+		)
+		require.NoError(t, err)
 	})
 
 	t.Run("invalid path&query input", func(t *testing.T) {
@@ -149,11 +237,9 @@ func Test_UnmarshalReq(t *testing.T) {
 			false,
 			&input,
 		)
-		assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
-		var httpErr HTTPError
-		ok := errors.As(err, &httpErr)
-		assert.True(t, ok, "ErrorRes must be an response.HTTPError")
-		assert.Equal(t, http.StatusBadRequest, httpErr.Status, "ErrorRes code must be 400")
+		require.Error(t, err)
+		require.True(t, strings.Contains(err.Error(), "page"))
+		require.True(t, strings.Contains(err.Error(), "must be a valid integer"))
 	})
 
 	fakeDate := time.Date(2020, 3, 23, 11, 33, 0, 0, time.UTC)
@@ -172,10 +258,10 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 
-		assert.Equal(t, nil, err, "ErrorRes must be nil")
-		assert.Equal(t, "bla", input.ID, "ID must be parsed from path parameters")
-		assert.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
-		assert.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
+		require.Equal(t, nil, err, "ErrorRes must be nil")
+		require.Equal(t, "bla", input.ID, "ID must be parsed from path parameters")
+		require.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
+		require.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
 	})
 
 	t.Run("invalid body input, not base64", func(t *testing.T) {
@@ -203,9 +289,9 @@ func Test_UnmarshalReq(t *testing.T) {
 			&input,
 		)
 
-		assert.Equal(t, nil, err, "ErrorRes must be nil")
-		assert.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
-		assert.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
+		require.Equal(t, nil, err, "ErrorRes must be nil")
+		require.Equal(t, "Fake Post", input.Name, "Name must be parsed from body")
+		require.Equal(t, fakeDate, input.Date, "Date must be parsed from body")
 	})
 
 	t.Run("invalid body input, base64", func(t *testing.T) {

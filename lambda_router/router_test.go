@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	"github.com/jgroeneveld/trial/assert"
 )
 
 var testLog []string
@@ -26,34 +26,34 @@ func TestRouter(t *testing.T) {
 	t.Run("Routes created correctly", func(t *testing.T) {
 		t.Run("/", func(t *testing.T) {
 			route, ok := lmd.routes["/"]
-			assert.True(t, ok, "Route must be created")
+			require.True(t, ok, "Route must be created")
 			if ok {
-				assert.Equal(t, `^/api$`, route.re.String(), "Regex must be correct")
-				assert.NotEqual(t, nil, route.methods[http.MethodGet], "GET method must exist")
-				assert.NotEqual(t, nil, route.methods[http.MethodPost], "POST method must exist")
-				assert.NotEqual(t, nil, route.methods[http.MethodOptions], "OPTIONS method must exist") // auto generated for CORS support
+				require.Equal(t, `^/api$`, route.re.String(), "Regex must be correct")
+				require.NotEqual(t, nil, route.methods[http.MethodGet], "GET method must exist")
+				require.NotEqual(t, nil, route.methods[http.MethodPost], "POST method must exist")
+				require.NotEqual(t, nil, route.methods[http.MethodOptions], "OPTIONS method must exist") // auto generated for CORS support
 			}
 		})
 		t.Run("/:id", func(t *testing.T) {
 			route, ok := lmd.routes["/:id"]
-			assert.True(t, ok, "Route must be created")
+			require.True(t, ok, "Route must be created")
 			if ok {
-				assert.Equal(t, `^/api/([^/]+)$`, route.re.String(), "Regex must be correct")
-				assert.NotEqual(t, nil, route.methods[http.MethodGet], "GET method must exist")
-				assert.NotEqual(t, nil, route.methods[http.MethodOptions], "OPTIONS method must exist") // auto generated for CORS support
+				require.Equal(t, `^/api/([^/]+)$`, route.re.String(), "Regex must be correct")
+				require.NotEqual(t, nil, route.methods[http.MethodGet], "GET method must exist")
+				require.NotEqual(t, nil, route.methods[http.MethodOptions], "OPTIONS method must exist") // auto generated for CORS support
 			}
 		})
 		t.Run("/:id/stuff/:fake", func(t *testing.T) {
 			route, ok := lmd.routes["/:id/stuff/:fake"]
-			assert.True(t, ok, "Route must be created")
+			require.True(t, ok, "Route must be created")
 			if ok {
-				assert.Equal(
+				require.Equal(
 					t,
 					`^/api/([^/]+)/stuff/([^/]+)$`,
 					route.re.String(),
 					"Regex must be correct",
 				)
-				assert.DeepEqual(
+				require.EqualValues(
 					t,
 					[]string{"id", "fake"},
 					route.paramNames,
@@ -70,7 +70,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "ErrorRes must be nil")
+			require.Equal(t, nil, err, "ErrorRes must be nil")
 		})
 
 		t.Run("POST /api/", func(t *testing.T) {
@@ -80,7 +80,7 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "ErrorRes must be nil")
+			require.Equal(t, nil, err, "ErrorRes must be nil")
 		})
 
 		t.Run("DELETE /api", func(t *testing.T) {
@@ -89,11 +89,11 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
+			require.NotEqual(t, nil, err, "ErrorRes must not be nil")
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
-			assert.True(t, ok, "ErrorRes must be an HTTP error")
-			assert.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "ErrorRes code must be 405")
+			require.True(t, ok, "ErrorRes must be an HTTP error")
+			require.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "ErrorRes code must be 405")
 		})
 
 		t.Run("GET /api/fake-id", func(t *testing.T) {
@@ -102,8 +102,8 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/fake-id",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "ErrorRes must be nil")
-			assert.Equal(t, "fake-id", req.PathParameters["id"], "ID must be correct")
+			require.Equal(t, nil, err, "ErrorRes must be nil")
+			require.Equal(t, "fake-id", req.PathParameters["id"], "ID must be correct")
 		})
 
 		t.Run("GET /api/fake-id/bla", func(t *testing.T) {
@@ -112,11 +112,11 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/fake-id/bla",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.NotEqual(t, nil, err, "ErrorRes must not be nil")
+			require.NotEqual(t, nil, err, "ErrorRes must not be nil")
 			var httpErr HTTPError
 			ok := errors.As(err, &httpErr)
-			assert.True(t, ok, "ErrorRes must be an HTTP error")
-			assert.Equal(t, http.StatusNotFound, httpErr.Status, "ErrorRes code must be 404")
+			require.True(t, ok, "ErrorRes must be an HTTP error")
+			require.Equal(t, http.StatusNotFound, httpErr.Status, "ErrorRes code must be 404")
 		})
 
 		t.Run("GET /api/fake-id/stuff/faked-fake", func(t *testing.T) {
@@ -125,9 +125,9 @@ func TestRouter(t *testing.T) {
 				Path:       "/api/fake-id/stuff/faked-fake",
 			}
 			_, err := lmd.matchReq(&req)
-			assert.Equal(t, nil, err, "ErrorRes must be nil")
-			assert.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
-			assert.Equal(t, "faked-fake", req.PathParameters["fake"], "'fake' must be correct")
+			require.Equal(t, nil, err, "ErrorRes must be nil")
+			require.Equal(t, "fake-id", req.PathParameters["id"], "'id' must be correct")
+			require.Equal(t, "faked-fake", req.PathParameters["fake"], "'fake' must be correct")
 		})
 	})
 
@@ -138,10 +138,10 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			res, err := lmd.Handler(context.Background(), req)
-			assert.Equal(t, nil, err, "ErrorRes must not be nil")
-			assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
-			assert.True(t, len(testLog) > 0, "Log must have items")
-			assert.Equal(
+			require.Equal(t, nil, err, "ErrorRes must not be nil")
+			require.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
+			require.True(t, len(testLog) > 0, "Log must have items")
+			require.Equal(
 				t,
 				"[ERR] [POST /api] [401]",
 				testLog[len(testLog)-1],
@@ -158,8 +158,8 @@ func TestRouter(t *testing.T) {
 				},
 			}
 			res, err := lmd.Handler(context.Background(), req)
-			assert.Equal(t, nil, err, "ErrorRes must not be nil")
-			assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
+			require.Equal(t, nil, err, "ErrorRes must not be nil")
+			require.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
 		})
 
 		t.Run("GET /api", func(t *testing.T) {
@@ -168,10 +168,10 @@ func TestRouter(t *testing.T) {
 				Path:       "/api",
 			}
 			res, err := lmd.Handler(context.Background(), req)
-			assert.Equal(t, nil, err, "ErrorRes must not be nil")
-			assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
-			assert.True(t, len(testLog) > 0, "Log must have items")
-			assert.Equal(
+			require.Equal(t, nil, err, "ErrorRes must not be nil")
+			require.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
+			require.True(t, len(testLog) > 0, "Log must have items")
+			require.Equal(
 				t,
 				"[INF] [GET /api] [200]",
 				testLog[len(testLog)-1],
@@ -207,20 +207,20 @@ func TestRouter(t *testing.T) {
 				HTTPMethod: http.MethodPost,
 				Path:       "/foo/bar",
 			})
-			assert.Equal(t, "/foo/bar", res.Body, "req must match /foo/bar route")
+			require.Equal(t, "/foo/bar", res.Body, "req must match /foo/bar route")
 		}
 
 		res, _ := router.Handler(context.Background(), events.APIGatewayProxyRequest{
 			HTTPMethod: http.MethodDelete,
 			Path:       "/foo/bar",
 		})
-		assert.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, "Status code must be 405")
+		require.Equal(t, http.StatusMethodNotAllowed, res.StatusCode, "Status code must be 405")
 
 		res, _ = router.Handler(context.Background(), events.APIGatewayProxyRequest{
 			HTTPMethod: http.MethodGet,
 			Path:       "/foo/bar2",
 		})
-		assert.Equal(t, "/foo/:id", res.Body, "Body must match")
+		require.Equal(t, "/foo/:id", res.Body, "Body must match")
 	})
 }
 

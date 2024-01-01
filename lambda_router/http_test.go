@@ -2,12 +2,11 @@ package lambda_router
 
 import (
 	"encoding/json"
+	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
-
-	"github.com/jgroeneveld/trial/assert"
 )
 
 func TestHTTPHandler(t *testing.T) {
@@ -29,9 +28,9 @@ func TestHTTPHandler(t *testing.T) {
 			nil,
 		)
 
-		assert.Equal(t, nil, err, "ErrorRes must not be nil")
-		assert.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
-		assert.True(t, len(testLog) > 0, "Log must have items")
+		require.Equal(t, nil, err, "ErrorRes must not be nil")
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode, "Status code must be 401")
+		require.True(t, len(testLog) > 0, "Log must have items")
 	})
 
 	t.Run("POST /api with auth", func(t *testing.T) {
@@ -47,15 +46,15 @@ func TestHTTPHandler(t *testing.T) {
 		req.Header.Set("Authorization", "Bearer fake-token")
 
 		res, err := http.DefaultClient.Do(req)
-		assert.Equal(t, nil, err, "ErrorRes must not be nil")
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
+		require.Equal(t, nil, err, "ErrorRes must not be nil")
+		require.Equal(t, http.StatusBadRequest, res.StatusCode, "Status code must be 400")
 	})
 
 	t.Run("GET /api", func(t *testing.T) {
 		res, err := http.Get(ts.URL + "/api")
-		assert.Equal(t, nil, err, "ErrorRes must not be nil")
-		assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
-		assert.True(t, len(testLog) > 0, "Log must have items")
+		require.Equal(t, nil, err, "ErrorRes must not be nil")
+		require.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
+		require.True(t, len(testLog) > 0, "Log must have items")
 	})
 
 	t.Run("GET /api/something/stuff", func(t *testing.T) {
@@ -67,13 +66,13 @@ func TestHTTPHandler(t *testing.T) {
 		req.Header.Set("Accept-Language", "en-us")
 
 		res, err := http.DefaultClient.Do(req)
-		assert.Equal(t, nil, err, "Response error must be nil")
-		assert.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
+		require.Equal(t, nil, err, "Response error must be nil")
+		require.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
 
 		var data []mockItem
 		err = json.NewDecoder(res.Body).Decode(&data)
-		assert.Equal(t, nil, err, "Decode error must be nil")
-		assert.DeepEqual(
+		require.Equal(t, nil, err, "Decode error must be nil")
+		require.EqualValues(
 			t,
 			[]mockItem{
 				{
