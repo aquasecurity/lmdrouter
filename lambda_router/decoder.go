@@ -182,7 +182,8 @@ func unmarshalField(
 	strVal, ok := params[param]
 	strVals, okMulti := multiParam[param]
 
-	if !ok && !okMulti {
+	// check for empty / unset values and return no error if so
+	if !ok && !okMulti || (strVal == "" && strVals == nil) {
 		return nil
 	}
 
