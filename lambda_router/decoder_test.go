@@ -222,6 +222,19 @@ func Test_UnmarshalReq(t *testing.T) {
 		)
 		require.NoError(t, err)
 	})
+	t.Run("valid input unset values", func(t *testing.T) {
+		var input mockListReq
+		err := UnmarshalReq(
+			events.APIGatewayProxyRequest{
+				QueryStringParameters: map[string]string{
+					"mongoId": "",
+				},
+			},
+			false,
+			&input,
+		)
+		require.NoError(t, err)
+	})
 
 	t.Run("invalid path&query input", func(t *testing.T) {
 		var input mockListReq
