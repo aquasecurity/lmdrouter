@@ -11,6 +11,13 @@ import (
 	"strings"
 )
 
+const MethodKey = "method"
+const MultiParamsKey = "multiParams"
+const PathKey = "path"
+const PathParamsKey = "pathParams"
+const QueryParamsKey = "queryParams"
+const RequestIDKey = "requestId"
+
 var ErrNoAuthorizationHeader = errors.New("no Authorization header value set")
 var ErrNoBearerPrefix = errors.New("missing 'Bearer ' prefix for Authorization header value")
 var ErrVerifyJWT = errors.New("unable to verify JWT to retrieve claims. try logging in again to ensure it is not expired")
@@ -171,5 +178,23 @@ func LogRequestMW(next lambda_router.Handler) lambda_router.Handler {
 		log.Printf(format, level, req.HTTPMethod, req.Path, code, extra)
 
 		return res, err
+	}
+}
+
+// InjectLambdaContextMW with do exactly that - inject all appropriate lambda values into the local
+// context so that other users down the line can query the context for things like HTTP method or Path
+func InjectLambdaContextMW(next lambda_router.Handler) lambda_router.Handler {
+	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
+		res events.APIGatewayProxyResponse,
+		err error,
+	) {
+		ctx = context.WithValue(ctx, MethodKey, req.HTTPMethod)
+		ctx = context.WithValue(ctx, MultiParamsKey, req.MultiValueQueryStringParameters)
+		ctx = context.WithValue(ctx, PathKey, req.Path)
+		ctx = context.WithValue(ctx, PathParamsKey, req.PathParameters)
+		ctx = context.WithValue(ctx, QueryParamsKey, req.QueryStringParameters)
+		ctx = context.WithValue(ctx, RequestIDKey, req.RequestContext.RequestID)
+
+		return next(ctx, req)
 	}
 }

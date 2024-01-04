@@ -5,8 +5,8 @@ import (
 	"errors"
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/golang-jwt/jwt"
+	"github.com/seantcanavan/lambda_jwt_router/internal/util"
 	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
-	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"testing"
@@ -18,7 +18,7 @@ func TestAllowOptionsMW(t *testing.T) {
 		req := events.APIGatewayProxyRequest{
 			HTTPMethod:     http.MethodOptions,
 			Headers:        nil,
-			RequestContext: lambda_util.GenerateRandomAPIGatewayContext(),
+			RequestContext: util.GenerateRandomAPIGatewayContext(),
 		}
 
 		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
@@ -41,7 +41,7 @@ func TestAllowOptionsMW(t *testing.T) {
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},
-			RequestContext: lambda_util.GenerateRandomAPIGatewayContext(),
+			RequestContext: util.GenerateRandomAPIGatewayContext(),
 		}
 
 		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
@@ -57,7 +57,7 @@ func TestAllowOptionsMW(t *testing.T) {
 		req := events.APIGatewayProxyRequest{
 			HTTPMethod:     http.MethodOptions,
 			Headers:        nil,
-			RequestContext: lambda_util.GenerateRandomAPIGatewayContext(),
+			RequestContext: util.GenerateRandomAPIGatewayContext(),
 		}
 
 		// we pass along an error handler but expect http.StatusOK because the AllowOptions handler should execute first
@@ -97,7 +97,7 @@ func TestDecodeAndInjectExpandedClaims(t *testing.T) {
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},
-			RequestContext: lambda_util.GenerateRandomAPIGatewayContext(),
+			RequestContext: util.GenerateRandomAPIGatewayContext(),
 		}
 
 		jwtMiddlewareHandler := DecodeExpanded(generateSuccessHandlerAndMapExpandedContext())
@@ -157,7 +157,7 @@ func TestDecodeAndInjectStandardClaims(t *testing.T) {
 			Headers: map[string]string{
 				"Authorization": "Bearer " + signedJWT,
 			},
-			RequestContext: lambda_util.GenerateRandomAPIGatewayContext(),
+			RequestContext: util.GenerateRandomAPIGatewayContext(),
 		}
 
 		jwtMiddlewareHandler := DecodeStandard(generateSuccessHandlerAndMapStandardContext())
@@ -265,7 +265,7 @@ func TestExtractJWT(t *testing.T) {
 func TestGenerateEmptyErrorHandler(t *testing.T) {
 	t.Run("verify empty error handler returns error", func(t *testing.T) {
 		errHandler := GenerateEmptyErrorHandler()
-		res, err := errHandler(nil, lambda_util.GenerateRandomAPIGatewayProxyRequest())
+		res, err := errHandler(nil, util.GenerateRandomAPIGatewayProxyRequest())
 		require.Nil(t, err) // err handler embeds the error in the response, not the golang stack
 		require.Equal(t, res.StatusCode, http.StatusInternalServerError)
 		var httpError lambda_router.HTTPError
@@ -279,7 +279,7 @@ func TestGenerateEmptyErrorHandler(t *testing.T) {
 func TestGenerateEmptySuccessHandler(t *testing.T) {
 	t.Run("verify empty success handler returns success", func(t *testing.T) {
 		successHandler := GenerateEmptySuccessHandler()
-		res, err := successHandler(nil, lambda_util.GenerateRandomAPIGatewayProxyRequest())
+		res, err := successHandler(nil, util.GenerateRandomAPIGatewayProxyRequest())
 		require.Nil(t, err)
 		require.Equal(t, res.StatusCode, http.StatusOK)
 		require.Equal(t, res.Body, "{}") // empty struct response

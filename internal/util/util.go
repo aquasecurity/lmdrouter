@@ -1,4 +1,4 @@
-package lambda_util
+package util
 
 import (
 	"encoding/json"
@@ -67,6 +67,11 @@ func GenerateRandomAPIGatewayContext() events.APIGatewayProxyRequestContext {
 		RequestTimeEpoch: 0,
 		APIID:            GenerateRandomString(10),
 	}
+}
+
+// GenerateRandomInt returns a random integer between N and M (inclusive).
+func GenerateRandomInt(N, M int) int {
+	return rand.Intn(M-N+1) + N
 }
 
 func GenerateRandomString(n int) string {

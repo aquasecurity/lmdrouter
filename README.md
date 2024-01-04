@@ -8,6 +8,9 @@ Supports automatically replying to HTTP OPTIONS requests so calls from browsers 
 Go HTTP router library for AWS API Gateway-invoked Lambda Functions
 Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
 
+## Installation
+1. `go get github.com/seantcanavan/lambda_jwt_router@latest`
+
 
 ## How to Build locally
 1. `make build`
@@ -16,8 +19,8 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
 1. `make test`
 
 ## How to Use
-1. set the environment variable `LAMBDA_JWT_ROUTER_NO_CORS=true` to disable adding a CORS OPTIONS handler to every route automatically
-   1. If you do not set it manually - the default value will be `*`
+1. set the environment variable `LAMBDA_JWT_ROUTER_NO_CORS` to `true` to disable adding a CORS OPTIONS handler to every route automatically
+   1. If you do not set it manually - the default value will be `false` (all endpoints have CORS added by default)
 2. set the environment variable `LAMBDA_JWT_ROUTER_CORS_METHODS` to configure which CORS methods you would like to support
    1. If you do not set it manually - the default value will be `*`
 3. set the environment variable `LAMBDA_JWT_ROUTER_CORS_ORIGIN` to configure which CORS origins you would like to support
@@ -26,17 +29,112 @@ Forked from [aquasecurity/lmdrouter](https://github.com/aquasecurity/lmdrouter)
    1. If you do not set it manually - the default value will be `*`
 5. set the environment variable `LAMBDA_JWT_ROUTER_HMAC_SECRET` to configure the HMAC secret used to encode/decode JWTs
 6. See https://github.com/aquasecurity/lmdrouter for the original README and details
-7. More TBD coming on how to better utilize the changes I have made
 
-## Sample routing example
+## Sample routing example - see `routing_example.go` for more detail
+```
+var router *lambda_router.Router
+
+func init() {
+	router = lambda_router.NewRouter("/api")
+
+	router.Route("DELETE", "/books/:id", books.DeleteLambda)
+	router.Route("GET", "/books/:id", books.GetLambda)
+	router.Route("POST", "/books", books.CreateLambda)
+	router.Route("PUT", "/books/:id", books.UpdateLambda)
+}
+
+func main() {
+    // if we're running this in staging or production, we want to use the lambda handler on startup
+	environment := os.Getenv("STAGE")
+	if environment == "staging" || environment == "production" {
+		lambda.Start(router.Handler)
+	} else { // else, we want to start an HTTP server to listen for local development
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		log.Printf("Ready to listen and serve on port %s", port)
+		err := http.ListenAndServe(":"+port, http.HandlerFunc(router.ServeHTTP))
+		if err != nil {
+			panic(fmt.Sprintf("http.ListAndServe error %s", err))
+		}
+	}
+}
+```
 
 ## Sample JWT example
+```
+var router *lambda_router.Router
 
-## Sample middleware example
+func init() {
+	// implement your own base middleware functions and add to the NewRouter declaration to apply to every route
+	router = lambda_router.NewRouter("/api", lambda_jwt.InjectLambdaContextMW)
+
+	// to configure middleware at the route level, add them singularly to each route
+	// DecodeStandard will automagically check events.Headers["Authorization"] for a valid JWT.
+	// It will look for the LAMBDA_JWT_ROUTER_HMAC_SECRET environment variable and use that to decode
+	// the JWT. If decoding succeeds, it will inject all the standard claims into the context object
+	// before returning so other callers can access those fields at run time.
+	router.Route("DELETE", "/books/:id", books.DeleteLambda, lambda_jwt.DecodeStandard)
+	router.Route("GET", "/books/:id", books.GetLambda, lambda_jwt.DecodeStandard)
+	router.Route("POST", "/books", books.CreateLambda, lambda_jwt.DecodeStandard)
+	router.Route("PUT", "/books/:id", books.UpdateLambda, lambda_jwt.DecodeStandard)
+}
+
+func main() {
+	// if we're running this in staging or production, we want to use the lambda handler on startup
+	environment := os.Getenv("STAGE")
+	if environment == "staging" || environment == "production" {
+		lambda.Start(router.Handler)
+	} else { // else, we want to start an HTTP server to listen for local development
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		log.Printf("Ready to listen and serve on port %s", port)
+		err := http.ListenAndServe(":"+port, http.HandlerFunc(router.ServeHTTP))
+		if err != nil {
+			panic(fmt.Sprintf("http.ListAndServe error %s", err))
+		}
+	}
+}
+```
+
+## Sample middleware example - see `middleware_example.go` for more detail
+```
+var router *lambda_router.Router
+
+func init() {
+	// implement your own base middleware functions and add to the NewRouter declaration to apply to every route
+	router = lambda_router.NewRouter("/api", lambda_jwt.InjectLambdaContextMW)
+
+	// to configure middleware at the route level, add them singularly to each route
+	router.Route("DELETE", "/books/:id", books.DeleteLambda, lambda_jwt.LogRequestMW)
+	router.Route("GET", "/books/:id", books.GetLambda, lambda_jwt.LogRequestMW)
+	router.Route("POST", "/books", books.CreateLambda, lambda_jwt.LogRequestMW)
+	router.Route("PUT", "/books/:id", books.UpdateLambda, lambda_jwt.LogRequestMW)
+}
+
+func main() {
+	// if we're running this in staging or production, we want to use the lambda handler on startup
+	environment := os.Getenv("STAGE")
+	if environment == "staging" || environment == "production" {
+		lambda.Start(router.Handler)
+	} else { // else, we want to start an HTTP server to listen for local development
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8080"
+		}
+		log.Printf("Ready to listen and serve on port %s", port)
+		err := http.ListenAndServe(":"+port, http.HandlerFunc(router.ServeHTTP))
+		if err != nil {
+			panic(fmt.Sprintf("http.ListAndServe error %s", err))
+		}
+	}
+}
 
 ## All tests are passing
 ```
-go test -v ./...
 === RUN   TestAllowOptionsMW
 === RUN   TestAllowOptionsMW/verify_empty_OPTIONS_req_succeeds
 === RUN   TestAllowOptionsMW/verify_OPTIONS_req_succeeds_with_invalid_JWT_for_AllowOptions
@@ -114,13 +212,16 @@ go test -v ./...
     --- PASS: TestVerifyJWT/verify_err_when_parsing_invalid_jwt (0.00s)
     --- PASS: TestVerifyJWT/verify_err_when_parsing_expired_token_with_valid_jwt (0.00s)
 PASS
-ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
+ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.004s
+?   	github.com/seantcanavan/lambda_jwt_router/lambda_util	[no test files]
 === RUN   TestMarshalLambdaRequest
 === RUN   TestMarshalLambdaRequest/verify_MarshalReq_correctly_adds_the_JSON_string_to_the_request_body
 --- PASS: TestMarshalLambdaRequest (0.00s)
     --- PASS: TestMarshalLambdaRequest/verify_MarshalReq_correctly_adds_the_JSON_string_to_the_request_body (0.00s)
 === RUN   Test_UnmarshalReq
 === RUN   Test_UnmarshalReq/valid_path&query_input
+=== RUN   Test_UnmarshalReq/valid_empty_input
+=== RUN   Test_UnmarshalReq/valid_input_unset_values
 === RUN   Test_UnmarshalReq/invalid_path&query_input
 === RUN   Test_UnmarshalReq/valid_body_input,_not_base64
 === RUN   Test_UnmarshalReq/invalid_body_input,_not_base64
@@ -128,6 +229,8 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
 === RUN   Test_UnmarshalReq/invalid_body_input,_base64
 --- PASS: Test_UnmarshalReq (0.00s)
     --- PASS: Test_UnmarshalReq/valid_path&query_input (0.00s)
+    --- PASS: Test_UnmarshalReq/valid_empty_input (0.00s)
+    --- PASS: Test_UnmarshalReq/valid_input_unset_values (0.00s)
     --- PASS: Test_UnmarshalReq/invalid_path&query_input (0.00s)
     --- PASS: Test_UnmarshalReq/valid_body_input,_not_base64 (0.00s)
     --- PASS: Test_UnmarshalReq/invalid_body_input,_not_base64 (0.00s)
@@ -247,5 +350,4 @@ ok  	github.com/seantcanavan/lambda_jwt_router/lambda_jwt	0.005s
     --- PASS: TestRouter/Overlapping_routes (0.00s)
 PASS
 ok  	github.com/seantcanavan/lambda_jwt_router/lambda_router	0.004s
-?   	github.com/seantcanavan/lambda_jwt_router/lambda_util	[no test files]
 ```
