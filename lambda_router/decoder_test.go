@@ -2,7 +2,7 @@ package lambda_router
 
 import (
 	"cloud.google.com/go/civil"
-	"github.com/seantcanavan/lambda_jwt_router/lambda_util"
+	"github.com/seantcanavan/lambda_jwt_router/internal/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -87,8 +87,8 @@ const aliasExample stringAliasExample = "world"
 
 func TestMarshalLambdaRequest(t *testing.T) {
 	mi := mockItem{
-		ID:   lambda_util.GenerateRandomString(10),
-		Name: lambda_util.GenerateRandomString(10),
+		ID:   util.GenerateRandomString(10),
+		Name: util.GenerateRandomString(10),
 	}
 
 	t.Run("verify MarshalReq correctly adds the JSON string to the request body", func(t *testing.T) {
