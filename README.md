@@ -62,7 +62,7 @@ func main() {
 }
 ```
 
-## Sample JWT example
+## Sample JWT example - see `jwt_example.go` for more detail
 ```
 var router *lambda_router.Router
 
