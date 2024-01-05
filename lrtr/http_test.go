@@ -1,7 +1,8 @@
-package lambda_router
+package lrtr
 
 import (
 	"encoding/json"
+	"github.com/seantcanavan/lambda_jwt_router/internal/util"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
@@ -69,12 +70,12 @@ func TestHTTPHandler(t *testing.T) {
 		require.Equal(t, nil, err, "Response error must be nil")
 		require.Equal(t, http.StatusOK, res.StatusCode, "Status code must be 200")
 
-		var data []mockItem
+		var data []util.MockItem
 		err = json.NewDecoder(res.Body).Decode(&data)
 		require.Equal(t, nil, err, "Decode error must be nil")
 		require.EqualValues(
 			t,
-			[]mockItem{
+			[]util.MockItem{
 				{
 					ID:   "something",
 					Name: "one in en-us",

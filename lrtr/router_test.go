@@ -1,9 +1,13 @@
-package lambda_router
+package lrtr
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/seantcanavan/lambda_jwt_router/internal/util"
+	"github.com/seantcanavan/lambda_jwt_router/lcom"
+	"github.com/seantcanavan/lambda_jwt_router/lreq"
+	"github.com/seantcanavan/lambda_jwt_router/lres"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"strings"
@@ -90,7 +94,7 @@ func TestRouter(t *testing.T) {
 			}
 			_, err := lmd.matchReq(&req)
 			require.NotEqual(t, nil, err, "ErrorRes must not be nil")
-			var httpErr HTTPError
+			var httpErr lres.HTTPError
 			ok := errors.As(err, &httpErr)
 			require.True(t, ok, "ErrorRes must be an HTTP error")
 			require.Equal(t, http.StatusMethodNotAllowed, httpErr.Status, "ErrorRes code must be 405")
@@ -113,7 +117,7 @@ func TestRouter(t *testing.T) {
 			}
 			_, err := lmd.matchReq(&req)
 			require.NotEqual(t, nil, err, "ErrorRes must not be nil")
-			var httpErr HTTPError
+			var httpErr lres.HTTPError
 			ok := errors.As(err, &httpErr)
 			require.True(t, ok, "ErrorRes must be an HTTP error")
 			require.Equal(t, http.StatusNotFound, httpErr.Status, "ErrorRes code must be 404")
@@ -229,32 +233,32 @@ func listSomethings(_ context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	// parse input
-	var input mockListReq
-	err = UnmarshalReq(req, false, &input)
+	var input util.MockListReq
+	err = lreq.UnmarshalReq(req, false, &input)
 	if err != nil {
-		return ErrorRes(err)
+		return lres.ErrorRes(err)
 	}
 
 	now := time.Now()
 	then := now.Add(-time.Hour * 32)
 
-	output := []mockItem{
+	output := []util.MockItem{
 		{ID: "one", Name: "First Item", Date: now},
 		{ID: "two", Name: "2nd Item", Date: then},
 		{ID: "three", Name: "Third Item", Date: then},
 	}
 
-	return CustomRes(http.StatusOK, nil, output)
+	return lres.CustomRes(http.StatusOK, nil, output)
 }
 
 func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	res events.APIGatewayProxyResponse,
 	err error,
 ) {
-	var input mockPostReq
-	err = UnmarshalReq(req, true, &input)
+	var input util.MockPostReq
+	err = lreq.UnmarshalReq(req, true, &input)
 	if err != nil {
-		return ErrorRes(err)
+		return lres.ErrorRes(err)
 	}
 
 	output := map[string]string{
@@ -262,7 +266,7 @@ func postSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 		"url": "https://service.com/api/bla",
 	}
 
-	return CustomRes(http.StatusAccepted, map[string]string{
+	return lres.CustomRes(http.StatusAccepted, map[string]string{
 		"Location": output["url"],
 	}, output)
 }
@@ -272,19 +276,19 @@ func getSomething(_ context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	// parse input
-	var input mockGetReq
-	err = UnmarshalReq(req, false, &input)
+	var input util.MockGetReq
+	err = lreq.UnmarshalReq(req, false, &input)
 	if err != nil {
-		return ErrorRes(err)
+		return lres.ErrorRes(err)
 	}
 
-	output := mockItem{
+	output := util.MockItem{
 		ID:   input.ID,
 		Name: "Fake Name",
 		Date: time.Now(),
 	}
 
-	return CustomRes(http.StatusOK, nil, output)
+	return lres.CustomRes(http.StatusOK, nil, output)
 }
 
 func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
@@ -292,24 +296,24 @@ func listStuff(_ context.Context, req events.APIGatewayProxyRequest) (
 	err error,
 ) {
 	// parse input
-	var input mockListReq
-	err = UnmarshalReq(req, false, &input)
+	var input util.MockListReq
+	err = lreq.UnmarshalReq(req, false, &input)
 	if err != nil {
-		return ErrorRes(err)
+		return lres.ErrorRes(err)
 	}
 
-	output := make([]mockItem, len(input.Terms))
+	output := make([]util.MockItem, len(input.Terms))
 	for i, term := range input.Terms {
-		output[i] = mockItem{
+		output[i] = util.MockItem{
 			ID:   input.ID,
 			Name: fmt.Sprintf("%s in %s", term, input.Language),
 		}
 	}
 
-	return CustomRes(http.StatusOK, nil, output)
+	return lres.CustomRes(http.StatusOK, nil, output)
 }
 
-func logger(next Handler) Handler {
+func logger(next lcom.Handler) lcom.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		res events.APIGatewayProxyResponse,
 		err error,
@@ -345,7 +349,7 @@ func logger(next Handler) Handler {
 	}
 }
 
-func auth(next Handler) Handler {
+func auth(next lcom.Handler) lcom.Handler {
 	return func(ctx context.Context, req events.APIGatewayProxyRequest) (
 		res events.APIGatewayProxyResponse,
 		err error,
@@ -358,10 +362,10 @@ func auth(next Handler) Handler {
 			}
 		}
 
-		return CustomRes(
+		return lres.CustomRes(
 			http.StatusUnauthorized,
 			map[string]string{"WWW-Authenticate": "Bearer"},
-			HTTPError{Status: http.StatusUnauthorized, Message: "Unauthorized"},
+			lres.HTTPError{Status: http.StatusUnauthorized, Message: "Unauthorized"},
 		)
 	}
 }

@@ -3,7 +3,8 @@ package books
 import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/seantcanavan/lambda_jwt_router/internal/util"
-	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
+	"github.com/seantcanavan/lambda_jwt_router/lreq"
+	"github.com/seantcanavan/lambda_jwt_router/lres"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
@@ -16,11 +17,11 @@ func TestBooksLambda(t *testing.T) {
 			Title:  util.GenerateRandomString(10),
 		}
 
-		createRes, err := CreateLambda(textCtx, lambda_router.MarshalReq(cReq))
+		createRes, err := CreateLambda(textCtx, lreq.MarshalReq(cReq))
 		require.NoError(t, err)
 
 		createdBook := &Book{}
-		err = lambda_router.UnmarshalRes(createRes, createdBook)
+		err = lres.UnmarshalRes(createRes, createdBook)
 		require.NoError(t, err)
 
 		require.Equal(t, cReq.Author, createdBook.Author)
@@ -34,7 +35,7 @@ func TestBooksLambda(t *testing.T) {
 
 			gotBook := &Book{}
 
-			err = lambda_router.UnmarshalRes(getRes, gotBook)
+			err = lres.UnmarshalRes(getRes, gotBook)
 			require.NoError(t, err)
 
 			require.Equal(t, createdBook.Title, gotBook.Title)
@@ -50,14 +51,14 @@ func TestBooksLambda(t *testing.T) {
 				Title:  util.GenerateRandomString(10),
 			}
 
-			lambdaReq := lambda_router.MarshalReq(uReq)
+			lambdaReq := lreq.MarshalReq(uReq)
 			lambdaReq.PathParameters = map[string]string{"id": createdBook.ID.Hex()}
 
 			updateRes, err := UpdateLambda(textCtx, lambdaReq)
 			require.NoError(t, err)
 
 			updatedBook := &Book{}
-			err = lambda_router.UnmarshalRes(updateRes, updatedBook)
+			err = lres.UnmarshalRes(updateRes, updatedBook)
 			require.NoError(t, err)
 
 			require.Equal(t, uReq.Author, updatedBook.Author)
@@ -70,7 +71,7 @@ func TestBooksLambda(t *testing.T) {
 				require.NoError(t, err)
 
 				deletedBook := &Book{}
-				err = lambda_router.UnmarshalRes(deleteRes, deletedBook)
+				err = lres.UnmarshalRes(deleteRes, deletedBook)
 				require.NoError(t, err)
 
 				require.Equal(t, updatedBook.Title, deletedBook.Title)

@@ -1,8 +1,10 @@
-package lambda_router
+package lres
 
 import (
 	"encoding/base64"
 	"errors"
+	"github.com/seantcanavan/lambda_jwt_router/internal/util"
+	"github.com/seantcanavan/lambda_jwt_router/lcom"
 	"github.com/stretchr/testify/require"
 	"net/http"
 	"os"
@@ -14,12 +16,12 @@ type customStruct struct {
 }
 
 func TestCustomRes(t *testing.T) {
-	os.Setenv(CORSHeadersEnvKey, "headers-header-val")
-	defer os.Unsetenv(CORSHeadersEnvKey)
-	os.Setenv(CORSMethodsEnvKey, "methods-header-val")
-	defer os.Unsetenv(CORSMethodsEnvKey)
-	os.Setenv(CORSOriginEnvKey, "origin-header-val")
-	defer os.Unsetenv(CORSOriginEnvKey)
+	headersHeaderVal := util.GenerateRandomString(10)
+	methodsHeaderVal := util.GenerateRandomString(10)
+	originHeaderVal := util.GenerateRandomString(10)
+
+	setCors(t, headersHeaderVal, methodsHeaderVal, originHeaderVal)
+	defer unsetCors(t)
 
 	httpStatus := http.StatusTeapot
 	headers := map[string]string{
@@ -47,9 +49,9 @@ func TestCustomRes(t *testing.T) {
 		require.Equal(t, httpStatus, res.StatusCode)
 	})
 	t.Run("verify CustomRes returns CORS headers", func(t *testing.T) {
-		require.Equal(t, res.Headers[CORSHeadersHeaderKey], "headers-header-val")
-		require.Equal(t, res.Headers[CORSMethodsHeaderKey], "methods-header-val")
-		require.Equal(t, res.Headers[CORSOriginHeaderKey], "origin-header-val")
+		require.Equal(t, headersHeaderVal, res.Headers[lcom.CORSHeadersHeaderKey])
+		require.Equal(t, methodsHeaderVal, res.Headers[lcom.CORSMethodsHeaderKey])
+		require.Equal(t, originHeaderVal, res.Headers[lcom.CORSOriginHeaderKey])
 	})
 }
 
@@ -63,19 +65,15 @@ func TestEmptyRes(t *testing.T) {
 		require.Equal(t, http.StatusOK, res.StatusCode)
 	})
 	t.Run("verify EmptyRes returns CORS headers", func(t *testing.T) {
-		require.Equal(t, res.Headers[CORSHeadersEnvKey], "")
-		require.Equal(t, res.Headers[CORSMethodsEnvKey], "")
-		require.Equal(t, res.Headers[CORSOriginEnvKey], "")
+		require.Equal(t, res.Headers[lcom.CORSHeadersEnvKey], "")
+		require.Equal(t, res.Headers[lcom.CORSMethodsEnvKey], "")
+		require.Equal(t, res.Headers[lcom.CORSOriginEnvKey], "")
 	})
 }
 
 func TestErrorRes(t *testing.T) {
-	os.Setenv(CORSHeadersEnvKey, "*")
-	defer os.Unsetenv(CORSHeadersEnvKey)
-	os.Setenv(CORSMethodsEnvKey, "*")
-	defer os.Unsetenv(CORSMethodsEnvKey)
-	os.Setenv(CORSOriginEnvKey, "*")
-	defer os.Unsetenv(CORSOriginEnvKey)
+	setCors(t, "*", "*", "*")
+	defer unsetCors(t)
 
 	t.Run("Handle an HTTPError ErrorRes without ExposeServerErrors set and verify CORS", func(t *testing.T) {
 		res, _ := ErrorRes(HTTPError{
@@ -85,9 +83,9 @@ func TestErrorRes(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, res.StatusCode, "status status must be correct")
 		require.Equal(t, `{"status":400,"message":"Invalid input"}`, res.Body, "body must be correct")
 		t.Run("verify ErrorRes returns CORS headers", func(t *testing.T) {
-			require.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
-			require.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
-			require.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
+			require.Equal(t, res.Headers[lcom.CORSHeadersHeaderKey], "*")
+			require.Equal(t, res.Headers[lcom.CORSMethodsHeaderKey], "*")
+			require.Equal(t, res.Headers[lcom.CORSOriginHeaderKey], "*")
 		})
 	})
 	t.Run("Handle an HTTPError for ErrorRes when ExposeServerErrors is true", func(t *testing.T) {
@@ -123,12 +121,8 @@ func TestErrorRes(t *testing.T) {
 }
 
 func TestFileRes(t *testing.T) {
-	os.Setenv(CORSHeadersEnvKey, "*")
-	defer os.Unsetenv(CORSHeadersEnvKey)
-	os.Setenv(CORSMethodsEnvKey, "*")
-	defer os.Unsetenv(CORSMethodsEnvKey)
-	os.Setenv(CORSOriginEnvKey, "*")
-	defer os.Unsetenv(CORSOriginEnvKey)
+	setCors(t, "*", "*", "*")
+	defer unsetCors(t)
 
 	csvContent := `
 header1, header2
@@ -150,19 +144,15 @@ value1, value2
 		require.Equal(t, "value", res.Headers["key"])
 	})
 	t.Run("verify FileRes returns CORS headers", func(t *testing.T) {
-		require.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSHeadersHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSMethodsHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSOriginHeaderKey], "*")
 	})
 }
 
 func TestFileB64Res(t *testing.T) {
-	os.Setenv(CORSHeadersEnvKey, "*")
-	defer os.Unsetenv(CORSHeadersEnvKey)
-	os.Setenv(CORSMethodsEnvKey, "*")
-	defer os.Unsetenv(CORSMethodsEnvKey)
-	os.Setenv(CORSOriginEnvKey, "*")
-	defer os.Unsetenv(CORSOriginEnvKey)
+	setCors(t, "*", "*", "*")
+	defer unsetCors(t)
 
 	csvContent := `
 header1, header2
@@ -188,19 +178,15 @@ value1, value2
 		require.Equal(t, "value", res.Headers["key"])
 	})
 	t.Run("verify FileB64Res returns CORS headers", func(t *testing.T) {
-		require.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSHeadersHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSMethodsHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSOriginHeaderKey], "*")
 	})
 }
 
 func TestStatusAndErrorRes(t *testing.T) {
-	os.Setenv(CORSHeadersEnvKey, "*")
-	defer os.Unsetenv(CORSHeadersEnvKey)
-	os.Setenv(CORSMethodsEnvKey, "*")
-	defer os.Unsetenv(CORSMethodsEnvKey)
-	os.Setenv(CORSOriginEnvKey, "*")
-	defer os.Unsetenv(CORSOriginEnvKey)
+	setCors(t, "*", "*", "*")
+	defer unsetCors(t)
 
 	newErr := errors.New("hello there")
 	res, err := StatusAndErrorRes(http.StatusTeapot, newErr)
@@ -210,19 +196,16 @@ func TestStatusAndErrorRes(t *testing.T) {
 		require.Equal(t, http.StatusTeapot, res.StatusCode)
 	})
 	t.Run("verify StatusAndErrorRes returns CORS headers", func(t *testing.T) {
-		require.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSHeadersHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSMethodsHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSOriginHeaderKey], "*")
 	})
+
 }
 
 func TestSuccessRes(t *testing.T) {
-	os.Setenv(CORSHeadersEnvKey, "*")
-	defer os.Unsetenv(CORSHeadersEnvKey)
-	os.Setenv(CORSMethodsEnvKey, "*")
-	defer os.Unsetenv(CORSMethodsEnvKey)
-	os.Setenv(CORSOriginEnvKey, "*")
-	defer os.Unsetenv(CORSOriginEnvKey)
+	setCors(t, "*", "*", "*")
+	defer unsetCors(t)
 
 	cs := customStruct{StructKey: "hello there"}
 	res, err := SuccessRes(cs)
@@ -237,8 +220,30 @@ func TestSuccessRes(t *testing.T) {
 		require.Equal(t, cs, returnedStruct)
 	})
 	t.Run("verify SuccessRes returns CORS headers", func(t *testing.T) {
-		require.Equal(t, res.Headers[CORSHeadersHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSMethodsHeaderKey], "*")
-		require.Equal(t, res.Headers[CORSOriginHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSHeadersHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSMethodsHeaderKey], "*")
+		require.Equal(t, res.Headers[lcom.CORSOriginHeaderKey], "*")
 	})
+}
+
+func setCors(t *testing.T, headers, methods, origin string) {
+	err := os.Setenv(lcom.CORSHeadersEnvKey, headers)
+	require.NoError(t, err)
+
+	err = os.Setenv(lcom.CORSMethodsEnvKey, methods)
+	require.NoError(t, err)
+
+	err = os.Setenv(lcom.CORSOriginEnvKey, origin)
+	require.NoError(t, err)
+}
+
+func unsetCors(t *testing.T) {
+	err := os.Unsetenv(lcom.CORSHeadersEnvKey)
+	require.NoError(t, err)
+
+	err = os.Unsetenv(lcom.CORSMethodsEnvKey)
+	require.NoError(t, err)
+
+	err = os.Unsetenv(lcom.CORSOriginEnvKey)
+	require.NoError(t, err)
 }

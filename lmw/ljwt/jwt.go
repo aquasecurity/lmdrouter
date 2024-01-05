@@ -1,4 +1,4 @@
-// Package lambda_jwt appends critical libraries necessary for using JWTs (Json Web Tokens)
+// Package ljwt appends critical libraries necessary for using JWTs (Json Web Tokens)
 // within AWS Lambda through API Gateway proxy requests / integration. It adds multiple
 // middleware functions for checking and validating permissions based on user type and
 // has multiple examples of appending information from the caller's JWT directly into
@@ -9,39 +9,19 @@
 // expanded claim set with a few additional helpful values like email and usertype
 // then check out the ExpandedClaims object. If you wish to provide your own
 // totally custom claim values and object then check out ExtractCustom.
-package lambda_jwt
+package ljwt
 
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"github.com/golang-jwt/jwt"
+	"github.com/seantcanavan/lambda_jwt_router/internal/util"
+	"github.com/seantcanavan/lambda_jwt_router/lcom"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 )
-
-// Use these const values to populate your own custom claim values
-const (
-	AudienceKey  = "aud"
-	EmailKey     = "email"
-	ExpiresAtKey = "exp"
-	FirstNameKey = "firstName"
-	FullNameKey  = "fullName"
-	IDKey        = "jti"
-	IssuedAtKey  = "iat"
-	IssuerKey    = "iss"
-	LevelKey     = "level"
-	NotBeforeKey = "nbf"
-	SubjectKey   = "sub"
-	UserTypeKey  = "userType"
-)
-
-var ErrBadClaimsObject = errors.New("lambda_jwt_router: the provided object to extract claims into is not compatible with the default claim set and its types")
-var ErrUnableToSignToken = errors.New("lambda_jwt_router: the provided claims were unable to be signed")
-var ErrInvalidJWT = errors.New("lambda_jwt_router: the provided JWT is invalid")
-var ErrInvalidToken = errors.New("lambda_jwt_router: the provided jwt was unable to be parsed into a token")
-var ErrInvalidTokenClaims = errors.New("lambda_jwt_router: the provided jwt was unable to be parsed for map claims")
-var ErrUnsupportedSigningMethod = errors.New("lambda_jwt_router:the provided signing method is unsupported. HMAC only allowed")
 
 type ExpandedClaims struct {
 	Audience  string `json:"aud"`
@@ -65,18 +45,18 @@ type ExpandedClaims struct {
 // 4 non-standard fields defined in this library.
 func ExtendExpanded(claims ExpandedClaims) jwt.MapClaims {
 	return jwt.MapClaims{
-		AudienceKey:  claims.Audience,
-		EmailKey:     claims.Email,
-		ExpiresAtKey: claims.ExpiresAt,
-		FirstNameKey: claims.FirstName,
-		FullNameKey:  claims.FullName,
-		IDKey:        claims.ID,
-		IssuedAtKey:  claims.IssuedAt,
-		IssuerKey:    claims.Issuer,
-		LevelKey:     claims.Level,
-		NotBeforeKey: claims.NotBefore,
-		SubjectKey:   claims.Subject,
-		UserTypeKey:  claims.UserType,
+		lcom.JWTClaimAudienceKey:  claims.Audience,
+		lcom.JWTClaimEmailKey:     claims.Email,
+		lcom.JWTClaimExpiresAtKey: claims.ExpiresAt,
+		lcom.JWTClaimFirstNameKey: claims.FirstName,
+		lcom.JWTClaimFullNameKey:  claims.FullName,
+		lcom.JWTClaimIDKey:        claims.ID,
+		lcom.JWTClaimIssuedAtKey:  claims.IssuedAt,
+		lcom.JWTClaimIssuerKey:    claims.Issuer,
+		lcom.JWTClaimLevelKey:     claims.Level,
+		lcom.JWTClaimNotBeforeKey: claims.NotBefore,
+		lcom.JWTClaimSubjectKey:   claims.Subject,
+		lcom.JWTClaimUserTypeKey:  claims.UserType,
 	}
 }
 
@@ -86,13 +66,13 @@ func ExtendExpanded(claims ExpandedClaims) jwt.MapClaims {
 // custom fields as you would like while still getting the 7 standard JWT fields.
 func ExtendStandard(claims jwt.StandardClaims) jwt.MapClaims {
 	return jwt.MapClaims{
-		AudienceKey:  claims.Audience,
-		ExpiresAtKey: claims.ExpiresAt,
-		IDKey:        claims.Id,
-		IssuedAtKey:  claims.IssuedAt,
-		IssuerKey:    claims.Issuer,
-		NotBeforeKey: claims.NotBefore,
-		SubjectKey:   claims.Subject,
+		lcom.JWTClaimAudienceKey:  claims.Audience,
+		lcom.JWTClaimExpiresAtKey: claims.ExpiresAt,
+		lcom.JWTClaimIDKey:        claims.Id,
+		lcom.JWTClaimIssuedAtKey:  claims.IssuedAt,
+		lcom.JWTClaimIssuerKey:    claims.Issuer,
+		lcom.JWTClaimNotBeforeKey: claims.NotBefore,
+		lcom.JWTClaimSubjectKey:   claims.Subject,
 	}
 }
 
@@ -104,12 +84,12 @@ func ExtendStandard(claims jwt.StandardClaims) jwt.MapClaims {
 func ExtractCustom(mapClaims jwt.MapClaims, val any) error {
 	jsonBytes, err := json.Marshal(mapClaims)
 	if err != nil {
-		return err
+		return util.WrapErrors(err, lcom.ErrMarshalMapClaims)
 	}
 
 	err = json.Unmarshal(jsonBytes, &val)
 	if err != nil {
-		return ErrBadClaimsObject
+		return util.WrapErrors(err, lcom.ErrBadClaimsObject)
 	}
 
 	return nil
@@ -122,12 +102,12 @@ func ExtractCustom(mapClaims jwt.MapClaims, val any) error {
 func ExtractStandard(mapClaims jwt.MapClaims, standardClaims *jwt.StandardClaims) error {
 	jsonBytes, err := json.Marshal(mapClaims)
 	if err != nil {
-		return err
+		return util.WrapErrors(err, lcom.ErrMarshalMapClaims)
 	}
 
 	err = json.Unmarshal(jsonBytes, standardClaims)
 	if err != nil {
-		return ErrBadClaimsObject
+		return util.WrapErrors(err, lcom.ErrBadClaimsObject)
 	}
 
 	return nil
@@ -145,7 +125,7 @@ func Sign(mapClaims jwt.MapClaims) (string, error) {
 	// Sign and get the complete encoded token as a string using the secret
 	encodedToken, err := token.SignedString(getBinarySecret())
 	if err != nil {
-		return "", ErrUnableToSignToken
+		return "", util.WrapErrors(err, lcom.ErrUnableToSignToken)
 	}
 
 	return encodedToken, nil
@@ -156,22 +136,22 @@ func Sign(mapClaims jwt.MapClaims) (string, error) {
 func VerifyJWT(userJWT string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(userJWT, keyFunc)
 	if err != nil {
-		return nil, ErrInvalidJWT
+		return nil, util.WrapErrors(err, lcom.ErrInvalidJWT)
 	}
 
 	if !token.Valid {
-		return nil, ErrInvalidToken
+		return nil, lcom.ErrInvalidToken
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return claims, nil
 	}
 
-	return nil, ErrInvalidTokenClaims
+	return nil, lcom.ErrInvalidTokenClaims
 }
 
 func getBinarySecret() []byte {
-	secret := os.Getenv("LAMBDA_JWT_ROUTER_HMAC_SECRET")
+	secret := os.Getenv(lcom.HMACSecretEnvKey)
 	if secret == "" {
 		log.Fatalf("cannot encode / decode with an empty secret")
 	}
@@ -187,8 +167,32 @@ func getBinarySecret() []byte {
 func keyFunc(token *jwt.Token) (interface{}, error) {
 	// Don't forget to validate the alg is what you expect:
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-		return nil, ErrUnsupportedSigningMethod
+		return nil, lcom.ErrUnsupportedSigningMethod
 	}
 
 	return getBinarySecret(), nil
+}
+
+// ExtractJWT will attempt to extract the JWT value and retrieve the map claims from an
+// events.APIGatewayProxyRequest object. If there is an error that will be returned
+// along with an appropriate HTTP status code as an integer. If everything goes right
+// then error will be nil and the int will be http.StatusOK
+func ExtractJWT(headers map[string]string) (jwt.MapClaims, int, error) {
+	authorizationHeader := headers["Authorization"]
+	if authorizationHeader == "" {
+		return nil, http.StatusBadRequest, lcom.ErrNoAuthorizationHeader
+	}
+
+	if !strings.HasPrefix(authorizationHeader, "Bearer ") {
+		return nil, http.StatusBadRequest, lcom.ErrNoBearerPrefix
+	}
+
+	userJwt := strings.TrimPrefix(authorizationHeader, "Bearer ")
+
+	mapClaims, err := VerifyJWT(userJwt)
+	if err != nil {
+		return nil, http.StatusUnauthorized, util.WrapErrors(err, lcom.ErrVerifyJWT)
+	}
+
+	return mapClaims, http.StatusOK, nil
 }

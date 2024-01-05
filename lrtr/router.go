@@ -1,4 +1,4 @@
-// Package lambda_router is a simple-to-use library for writing AWS Lambda functions in Go
+// Package lrtr is a simple-to-use library for writing AWS Lambda functions in Go
 // that listen to events of type API Gateway Proxy Req (represented by the
 // `events.APIGatewayProxyRequest` type of the github.com/aws-lambda-go/events
 // package).
@@ -48,11 +48,14 @@
 //
 //   - Implements net/http.Handler for local development and general usage outside
 //     an AWS Lambda environment.
-package lambda_router
+package lrtr
 
 import (
 	"context"
 	"fmt"
+	"github.com/seantcanavan/lambda_jwt_router/lcom"
+	"github.com/seantcanavan/lambda_jwt_router/lmw"
+	"github.com/seantcanavan/lambda_jwt_router/lres"
 	"net/http"
 	"net/url"
 	"os"
@@ -63,7 +66,7 @@ import (
 )
 
 type hasMiddleware struct {
-	middleware []Middleware
+	middleware []lcom.Middleware
 }
 
 // Router is the main type of the library. Lambda routes are registered to it,
@@ -82,72 +85,9 @@ type route struct {
 }
 
 type resource struct {
-	handler Handler
+	handler lcom.Handler
 	hasMiddleware
 }
-
-// Middleware is a function that receives a handler function (the next function
-// in the chain, possibly another middleware or the actual handler matched for
-// a req), and returns a handler function. These functions are quite similar
-// to HTTP middlewares in other libraries.
-//
-// Example middleware that logs all reqs:
-//
-//	func loggerMiddleware(next lmdrouter.Handler) lmdrouter.Handler {
-//	    return func(ctx context.Context, req events.APIGatewayProxyRequest) (
-//	        res events.APIGatewayProxyResponse,
-//	        err error,
-//	    ) {
-//	        format := "[%s] [%s %s] [%d]%s"
-//	        level := "INF"
-//	        var code int
-//	        var extra string
-//
-//	        res, err = next(ctx, req)
-//	        if err != nil {
-//	            level = "ERR"
-//	            code = http.StatusInternalServerError
-//	            extra = " " + err.ErrorRes()
-//	        } else {
-//	            code = res.StatusCode
-//	            if code >= 400 {
-//	                level = "ERR"
-//	            }
-//	        }
-//
-//	        log.Printf(format, level, req.HTTPMethod, req.Path, code, extra)
-//
-//	        return res, err
-//	    }
-//	}
-type Middleware func(Handler) Handler
-
-// Handler is a req handler function. It receives a context, and the API
-// Gateway's proxy req object, and returns a proxy response object and an
-// error.
-//
-// Example:
-//
-//	 func listSomethings(ctx context.Context, req events.APIGatewayProxyRequest) (
-//	     res events.APIGatewayProxyResponse,
-//	     err error,
-//	 ) {
-//	     // parse input
-//	     var input listSomethingsInput
-//	     err = lmdrouter.UnmarshalReq(req, false, &input)
-//	     if err != nil {
-//	         return lmdrouter.ErrorRes(err)
-//	     }
-//
-//	     // call some business logic that generates an output struct
-//	     // ...
-//
-//	     return lmdrouter.CustomRes(http.StatusOK, nil, output)
-//	}
-type Handler func(context.Context, events.APIGatewayProxyRequest) (
-	events.APIGatewayProxyResponse,
-	error,
-)
 
 // NewRouter creates a new Router object with a base path and a list of zero or
 // more global middleware functions. The base path is necessary if the lambda
@@ -155,7 +95,7 @@ type Handler func(context.Context, events.APIGatewayProxyRequest) (
 // function is mounted to "https://my.app/api", then the base path must be
 // "/api"). Use an empty string if the function is mounted to the root of the
 // domain.
-func NewRouter(basePath string, middleware ...Middleware) (l *Router) {
+func NewRouter(basePath string, middleware ...lcom.Middleware) (l *Router) {
 	return &Router{
 		basePath: basePath,
 		routes:   make(map[string]route),
@@ -167,7 +107,7 @@ func NewRouter(basePath string, middleware ...Middleware) (l *Router) {
 
 // Route registers a new route, with the provided HTTP method name and path,
 // and zero or more local middleware functions.
-func (l *Router) Route(method, path string, handler Handler, middleware ...Middleware) {
+func (l *Router) Route(method, path string, handler lcom.Handler, middleware ...lcom.Middleware) {
 	// check if this route already exists
 	r, ok := l.routes[path]
 	if !ok {
@@ -207,9 +147,9 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	// for simplicity reasons as any middleware that performs
 	// authentication or authorization on the main route will also
 	// apply here and prevent the CORS request from succeeding.
-	if os.Getenv("LAMBDA_JWT_ROUTER_NO_CORS") != "true" {
+	if os.Getenv(lcom.NoCORS) != "true" {
 		r.methods[http.MethodOptions] = resource{
-			handler: l.getOptionsHandler(),
+			handler: lmw.AllowOptionsMW(),
 		}
 	}
 
@@ -223,18 +163,6 @@ func (l *Router) Route(method, path string, handler Handler, middleware ...Middl
 	l.routes[path] = r
 }
 
-func (l *Router) getOptionsHandler() Handler {
-	return func(context.Context, events.APIGatewayProxyRequest) (
-		events.APIGatewayProxyResponse,
-		error,
-	) {
-		return events.APIGatewayProxyResponse{
-			StatusCode: http.StatusOK,
-			Body:       "Blanket CORS req",
-		}, nil
-	}
-}
-
 // Handler receives a context and an API Gateway Proxy req, and handles the
 // req, matching the appropriate handler and executing it. This is the
 // method that must be provided to the lambda's `main` function:
@@ -243,7 +171,7 @@ func (l *Router) getOptionsHandler() Handler {
 //
 //	import (
 //	    "github.com/aws/aws-lambda-go/lambda"
-//	    "github.com/aquasecurity/lmdrouter"
+//	    "github.com/seantcanavan/lmdrouter"
 //	)
 //
 //	var router *lmdrouter.Router
@@ -266,7 +194,7 @@ func (l *Router) Handler(
 ) (events.APIGatewayProxyResponse, error) {
 	matchedResource, err := l.matchReq(&req)
 	if err != nil {
-		return ErrorRes(err)
+		return lres.ErrorRes(err)
 	}
 
 	handler := matchedResource.handler
@@ -288,7 +216,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 	// remove trailing slash from req path
 	req.Path = strings.TrimSuffix(req.Path, "/")
 
-	negErr := HTTPError{
+	negErr := lres.HTTPError{
 		Status:  http.StatusNotFound,
 		Message: "No such resource",
 	}
@@ -307,7 +235,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		if !ok {
 			// we matched a route, but it didn't support this method. Mark negErr
 			// with a 405 error, but continue, we might match another route
-			negErr = HTTPError{
+			negErr = lres.HTTPError{
 				Status:  http.StatusMethodNotAllowed,
 				Message: fmt.Sprintf("%s reqs not supported by this resource", req.HTTPMethod),
 			}
@@ -317,7 +245,7 @@ func (l *Router) matchReq(req *events.APIGatewayProxyRequest) (
 		// process path parameters
 		for i, param := range r.paramNames {
 			if len(matches)-1 < len(r.paramNames) {
-				return matchedResource, HTTPError{
+				return matchedResource, lres.HTTPError{
 					Status:  http.StatusInternalServerError,
 					Message: "Failed matching path parameters",
 				}

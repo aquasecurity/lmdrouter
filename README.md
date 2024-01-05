@@ -2,7 +2,31 @@
 Simple HTTP router for working with Json Web Tokens (JWTs) on AWS Lambda through APIGateway proxy requests.
 Supports local HTTP routing through net/http for local testing, debugging, and development.
 Supports setting an HMAC secret for signing and verifying JWTs.
-Supports automatically replying to HTTP OPTIONS requests so calls from browsers succeed.
+Supports automatically replying to HTTP OPTIONS requests so calls from browsers succeed (CORS).
+
+## Features
+1. Execute unproxied Lambda HTTP requests while running in the AWS Lambda environment
+2. Execute proxied Lambda HTTP requests while running in the AWS Lambda environment
+3. Rapidly iterate with local development via HTTP to prevent having to deploy to AWS Lambda for testing
+   1. Optional hot reloading supported via [Fresh](https://github.com/seantcanavan/fresh)
+4. Implement a smarter unmarshaler that checks body, headers, path params, query params, and multi value query params to reduce lambda boilerplate via custom tags
+   1. `lambda:"path.id"` - parse path parameter for value 'id'
+   2. `lambda:"query.id"` - parse query string parameters for value 'id'
+   3. `lambda:"header.Authorization"` - parse headers for value 'Authorization'
+   4. `json:"title"` - use standard JSON tags in conjunction with lambda tags for maximum value
+5. Add a set of standard responses for error and success cases to reduce lambda boilerplate
+   1. `SuccessRes(interface{})` - return any standard struct as a valid lambda success response
+   2. `ErrorRes(int statusCode)` - quick return with an empty response and status code
+6. Add a set of custom responses for error and success cases to reduce lambda boilerplate
+   1. `CustomRes(httpStatus int, headers map[string]string, data interface{}) // modify the lambda res as much as necessary for specific cases where the defaults are not correct`
+7. Implement a robust set of middlewares for authentication/authorization, logging, lambda context, and more
+   1. `InjectLambdaContextMW` - add standard lambda request values to the root request context
+   2. `LogRequestMW` - primitive logger that will print all outgoing responses and their status code
+8. Add optional support for JWT Decoding `req.Headers["Authorization"]` via HMAC secret
+   1. `DecodeStandard` - decode the standard JWT claims and add them to the request's root context`
+   2. `DecodeExpanded` - parse an expanded set of JWT claims such as userId and userType and add them to the request's root context`
+   3. `type Handler func(context.Context, events.APIGatewayProxyRequest)` - implement your own loggers, middlewares, and JWT decoders
+9. Add optional support for CORS via environment variables
 
 ## Previous README
 Go HTTP router library for AWS API Gateway-invoked Lambda Functions

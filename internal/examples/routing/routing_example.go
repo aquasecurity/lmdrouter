@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/seantcanavan/lambda_jwt_router/internal/examples/books"
-	"github.com/seantcanavan/lambda_jwt_router/lambda_router"
+	"github.com/seantcanavan/lambda_jwt_router/lrtr"
 	"log"
 	"net/http"
 	"os"
 )
 
-var router *lambda_router.Router
+var router *lrtr.Router
 
 func init() {
-	router = lambda_router.NewRouter("/api")
+	router = lrtr.NewRouter("/api")
 
 	router.Route("DELETE", "/books/:id", books.DeleteLambda)
 	router.Route("GET", "/books/:id", books.GetLambda)

@@ -1,4 +1,4 @@
-package lambda_router
+package lreq
 
 import (
 	"cloud.google.com/go/civil"
@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/seantcanavan/lambda_jwt_router/lres"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 	"net/http"
@@ -14,24 +16,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/aws/aws-lambda-go/events"
 )
 
 var boolRegex = regexp.MustCompile(`^1|true|on|enabled|t$`)
-
-// MarshalReq will take an interface input, marshal it to JSON, and add the
-// JSON as a string to the events.APIGatewayProxyRequest body field before returning.
-func MarshalReq(input interface{}) events.APIGatewayProxyRequest {
-	jsonBytes, err := json.Marshal(input)
-	if err != nil {
-		log.Fatalf("%+v", err)
-	}
-
-	return events.APIGatewayProxyRequest{
-		Body: string(jsonBytes),
-	}
-}
 
 // UnmarshalReq "fills" out a target Go struct with data from the req.
 // If body is true, then the req body is assumed to be JSON and simply
@@ -82,16 +69,27 @@ func UnmarshalReq(req events.APIGatewayProxyRequest, body bool, target interface
 	return unmarshalEvent(req, target)
 }
 
-// UnmarshalRes should generally be used only when testing as normally you return the response
-// directly to the caller and won't need to Unmarshal it. However, if you are testing locally then
-// it will help you extract the response body of a lambda request and marshal it to an object.
-func UnmarshalRes(res events.APIGatewayProxyResponse, target interface{}) error {
-	rv := reflect.ValueOf(target)
-	if rv.Kind() != reflect.Ptr || rv.IsNil() {
-		return errors.New("invalid unmarshal target, must be pointer to struct")
+func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (err error) {
+	if req.IsBase64Encoded {
+		var body []byte
+		body, err = base64.StdEncoding.DecodeString(req.Body)
+		if err != nil {
+			return fmt.Errorf("failed decoding body: %w", err)
+		}
+
+		err = json.Unmarshal(body, target)
+	} else {
+		err = json.Unmarshal([]byte(req.Body), target)
 	}
 
-	return json.Unmarshal([]byte(res.Body), target)
+	if err != nil {
+		return lres.HTTPError{
+			Status:  http.StatusBadRequest,
+			Message: fmt.Sprintf("invalid req body: %s", err),
+		}
+	}
+
+	return nil
 }
 
 func unmarshalEvent(req events.APIGatewayProxyRequest, target interface{}) error {
@@ -146,29 +144,6 @@ func unmarshalEvent(req events.APIGatewayProxyRequest, target interface{}) error
 			return err
 		}
 	}
-	return nil
-}
-
-func unmarshalBody(req events.APIGatewayProxyRequest, target interface{}) (err error) {
-	if req.IsBase64Encoded {
-		var body []byte
-		body, err = base64.StdEncoding.DecodeString(req.Body)
-		if err != nil {
-			return fmt.Errorf("failed decoding body: %w", err)
-		}
-
-		err = json.Unmarshal(body, target)
-	} else {
-		err = json.Unmarshal([]byte(req.Body), target)
-	}
-
-	if err != nil {
-		return HTTPError{
-			Status:  http.StatusBadRequest,
-			Message: fmt.Sprintf("invalid req body: %s", err),
-		}
-	}
-
 	return nil
 }
 
@@ -389,7 +364,7 @@ func parseInt64Param(param, str string, ok bool) (value int64, err error) {
 
 	value, err = strconv.ParseInt(str, 10, 64)
 	if err != nil {
-		return value, HTTPError{
+		return value, lres.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid integer", param),
 		}
@@ -405,7 +380,7 @@ func parseUint64Param(param, str string, ok bool) (value uint64, err error) {
 
 	value, err = strconv.ParseUint(str, 10, 64)
 	if err != nil {
-		return value, HTTPError{
+		return value, lres.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid, positive integer", param),
 		}
@@ -421,11 +396,24 @@ func parseFloat64Param(param, str string, ok bool) (value float64, err error) {
 
 	value, err = strconv.ParseFloat(str, 64)
 	if err != nil {
-		return value, HTTPError{
+		return value, lres.HTTPError{
 			Status:  http.StatusBadRequest,
 			Message: fmt.Sprintf("%s must be a valid floating point number", param),
 		}
 	}
 
 	return value, nil
+}
+
+// MarshalReq will take an interface input, marshal it to JSON, and add the
+// JSON as a string to the events.APIGatewayProxyRequest body field before returning.
+func MarshalReq(input interface{}) events.APIGatewayProxyRequest {
+	jsonBytes, err := json.Marshal(input)
+	if err != nil {
+		log.Fatalf("%+v", err)
+	}
+
+	return events.APIGatewayProxyRequest{
+		Body: string(jsonBytes),
+	}
 }
